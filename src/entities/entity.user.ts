@@ -32,7 +32,10 @@ export class UserEntity {
     password: string
 
     @Column("longtext",)
-    phone_number: string
+    phone_number: string   
+    
+    @Column("longtext",{nullable:true})
+    avatar: string
 
     @Column("longtext", {nullable:true})
     telegram_handle?: string

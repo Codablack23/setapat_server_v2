@@ -1,0 +1,18 @@
+import { Injectable, Inject, forwardRef } from '@nestjs/common';
+import { PassportStrategy } from '@nestjs/passport';
+import { Strategy } from 'passport-local';
+import { AuthService } from '../../../auth/auth.service';
+
+@Injectable()
+export class LocalStrategy extends PassportStrategy(Strategy) {
+  constructor(
+    @Inject(forwardRef(() => AuthService))
+    private authService: AuthService,
+  ) {
+    super({ usernameField: 'email' });
+  }
+
+  async validate(email: string, password: string) {
+    return this.authService.verifyUser(email, password);
+  }
+}

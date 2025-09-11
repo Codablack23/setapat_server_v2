@@ -15,6 +15,7 @@ async function bootstrap() {
     .setDescription("API documentation for all endpoints used by setapat services")
     .setVersion('1.0')
     .addTag('Setapat')
+    .addBearerAuth()
     .build();
   const documentFactory = () => SwaggerModule.createDocument(app, config);
   SwaggerModule.setup('api/v1/docs', app, documentFactory);

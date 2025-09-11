@@ -1,5 +1,7 @@
-import { Controller, Get, Post } from '@nestjs/common';
+import { Controller, Get, Post, UseGuards } from '@nestjs/common';
 import { SamplesService } from './samples.service';
+import { ApiBearerAuth } from '@nestjs/swagger';
+import { JwtAuthGuard } from 'src/providers';
 
 @Controller('design-samples')
 export class SamplesController {
@@ -8,6 +10,8 @@ export class SamplesController {
   @Get()
   getAllSamples() {}
 
+  @UseGuards(JwtAuthGuard)
+  @ApiBearerAuth()
   @Post(':id/react')
   reactToSamples() {}
 }
