@@ -3,6 +3,7 @@ import {
   Get,
   Post,
   Body,
+  Request,
   Patch,
   Param,
   Delete,
@@ -13,6 +14,7 @@ import { CreateOrderDto } from './dto/create-order.dto';
 import { UpdateOrderDto } from './dto/update-order.dto';
 import { JwtAuthGuard } from 'src/providers';
 import { ApiBearerAuth } from '@nestjs/swagger';
+import type { AuthRequest } from 'src/lib';
 
 @UseGuards(JwtAuthGuard)
 @ApiBearerAuth()
@@ -21,18 +23,18 @@ export class OrdersController {
   constructor(private readonly ordersService: OrdersService) {}
 
   @Post()
-  create(@Body() createOrderDto: CreateOrderDto) {
-    return this.ordersService.create(createOrderDto);
+  create(@Body() createOrderDto: CreateOrderDto, @Request() req: AuthRequest) {
+    return this.ordersService.create(createOrderDto, req.user);
   }
 
   @Get()
-  findAll() {
-    return this.ordersService.findAll();
+  findAll(@Request() req: AuthRequest) {
+    return this.ordersService.findAll(req.user);
   }
 
   @Get(':id')
-  findOne(@Param('id') id: string) {
-    return this.ordersService.findOne(+id);
+  findOne(@Param('id') id: string, @Request() req: AuthRequest) {
+    return this.ordersService.findOne(id, req.user.id);
   }
 
   // Base order actions

@@ -22,7 +22,23 @@ export class AuthService {
     ) { }
 
     async registerUser(registerUserDto: RegisterUserDto) {
-        return registerUserDto;
+
+        const existingUser = await this.userRepository.findOne({
+            where: {
+                email: registerUserDto.email
+            }
+        })
+
+        if (existingUser) throw new BadRequestException(AppResponse.getResponse("success", {
+            message: "User already exists"
+        }))
+
+        const newUser = this.userRepository.create({
+            ...registerUserDto,
+        })
+        const user = await this.userRepository.save(newUser)
+        return this.loginUser(this.removePasswordFromUserObject(user))
+
     }
 
     private removePasswordFromUserObject<T extends Record<string, any>>(object: T) {
@@ -46,13 +62,15 @@ export class AuthService {
             message: "User does not exist"
         });
 
-        const isPasswordValid = await bcrypt.compare(user.password, password)
+        const isPasswordValid = await bcrypt.compare(password, user.password)
         if (!isPasswordValid) throw new BadRequestException({
             status: "failed",
             message: "Incorrect credentials please check the email and try again"
         });
 
-        return this.removePasswordFromUserObject(user);
+        return {
+            ...this.removePasswordFromUserObject({})
+        };
     }
     async loginUser(user: any) {
         const token = this.jwtService.sign(user)

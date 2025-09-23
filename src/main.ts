@@ -5,10 +5,13 @@ import { AppModule } from './app.module';
 import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
 import { ValidationPipe, VersioningType } from '@nestjs/common';
 import { useValidationException } from './lib';
+import { corsOptions } from './config';
 
 
 async function bootstrap() {
-  const app = await NestFactory.create(AppModule);
+  const app = await NestFactory.create(AppModule,{
+    cors:corsOptions
+  });
 
   const config = new DocumentBuilder()
     .setTitle('Setapat API Docs')

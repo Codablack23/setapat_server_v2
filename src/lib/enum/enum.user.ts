@@ -5,6 +5,10 @@ export enum UserType{
     BILLERS="BILLERS",
     ADMIN="ADMIN",
 }
+export enum Gender{
+    MALE="MALE",
+    FEMALE="FEMALE",
+}
 
 export enum DesignerRole{
     DESIGNER="DESIGNER",

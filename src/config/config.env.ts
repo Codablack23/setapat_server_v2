@@ -6,6 +6,7 @@ export interface IEnvironment {
   MAILER: {
     SMTP: string;
     HOST: string;
+    USER: string;
     PORT: number;
     EMAIL: string;
     PASSWORD: string;
@@ -42,6 +43,7 @@ export const ENVIRONMENT: IEnvironment = {
     HOST: process.env.MAILER_HOST ?? "",
     PORT: process.env.MAILER_PORT ? +process.env.MAILER_PORT:587,
     EMAIL: process.env.MAILER_EMAIL ?? "",
+    USER: process.env.MAILER_USER ?? "",
     PASSWORD: process.env.MAILER_PASSWORD ?? "",
   },
   DB: {

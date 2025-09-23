@@ -1,7 +1,15 @@
-import { Controller, Get, Param, Delete, UseGuards } from '@nestjs/common';
+import {
+  Controller,
+  Get,
+  Param,
+  Delete,
+  UseGuards,
+  Request,
+} from '@nestjs/common';
 import { NotificationsService } from './notifications.service';
 import { JwtAuthGuard } from 'src/providers';
 import { ApiBearerAuth } from '@nestjs/swagger';
+import type { AuthRequest } from 'src/lib';
 
 @UseGuards(JwtAuthGuard)
 @ApiBearerAuth()
@@ -10,12 +18,12 @@ export class NotificationsController {
   constructor(private readonly notificationsService: NotificationsService) {}
 
   @Get()
-  findAll() {
-    return this.notificationsService.findAll();
+  findAll(@Request() req: AuthRequest) {
+    return this.notificationsService.findAll(req.user.id);
   }
 
   @Delete(':id')
-  remove(@Param('id') id: string) {
-    return this.notificationsService.remove(+id);
+  remove(@Param('id') id: string, @Request() req: AuthRequest) {
+    return this.notificationsService.remove(id, req.user.id);
   }
 }

@@ -15,7 +15,7 @@ function getDBConfig(){
 function getTypeOrmConfig(){
     const dbConfig:DataSourceOptions = {
         ...getDBConfig(),
-        logging:true,
+        logging:false,
         type: "mysql",
         entities: [__dirname + '/../**/entity.*.{js,ts}'],
         migrations: [__dirname + '/../migrations/*.{js,ts}'],

@@ -14,4 +14,17 @@ export class AppResponse {
       data: apiResponse.data,
     };
   }
+  static getSuccessResponse<T>(apiResponse: ApiResponse<T>) {
+    return {
+      status: 'success' as StatusType,
+      message: apiResponse.message ?? 'Action completed successfully',
+      data: apiResponse.data,
+    };
+  }
+  static getFailedResponse(message: string) {
+    return {
+      status: 'failed' as StatusType,
+      message,
+    };
+  }
 }

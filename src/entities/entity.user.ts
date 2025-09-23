@@ -6,10 +6,13 @@ import {
     Entity, 
     PrimaryGeneratedColumn, 
     UpdateDateColumn,
-    BeforeUpdate
+    BeforeUpdate,
+    OneToMany
 } from "typeorm";
 import bcrypt from "bcrypt"
-import { UserType } from "src/lib";
+import { Gender, UserType } from "src/lib";
+import { OrderEntity } from "./entity.order";
+import { NotificationEntity } from "./entity.notification";
 
 @Entity({name:"users"})
 export class UserEntity {
@@ -26,8 +29,14 @@ export class UserEntity {
     email: string
 
     @Column({type:"enum",enum:UserType,default:UserType.USER})
-    user_type:UserType
+    user_type:UserType 
+    
+    @Column({type:"enum",enum:UserType,nullable:true})
+    gender:Gender
 
+    @Column("longtext",{nullable:true})
+    reason?: string 
+    
     @Column("longtext",)
     password: string
 
@@ -39,6 +48,12 @@ export class UserEntity {
 
     @Column("longtext", {nullable:true})
     telegram_handle?: string
+
+    @OneToMany(()=>OrderEntity,(order)=>order.user)
+    orders:OrderEntity[] 
+    
+    @OneToMany(()=>NotificationEntity,(notification)=>notification.user)
+    notifications:NotificationEntity[]
 
 
     @BeforeInsert()

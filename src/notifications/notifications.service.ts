@@ -1,26 +1,50 @@
-import { Injectable } from '@nestjs/common';
-import { CreateNotificationDto } from './dto/create-notification.dto';
-import { UpdateNotificationDto } from './dto/update-notification.dto';
+import { InjectRepository } from '@nestjs/typeorm';
+import { BadGatewayException, Injectable } from '@nestjs/common';
+import { NotificationEntity } from 'src/entities/entity.notification';
+import { Repository } from 'typeorm';
+import { AppResponse } from 'src/lib';
 
 @Injectable()
 export class NotificationsService {
-  create(createNotificationDto: CreateNotificationDto) {
-    return 'This action adds a new notification';
+  constructor(
+    @InjectRepository(NotificationEntity)
+    private notificationRepository: Repository<NotificationEntity>,
+  ) {}
+
+  async findAll(userId: string) {
+    const notifications = await this.notificationRepository.find({
+      where: {
+        user: {
+          id: userId,
+        },
+      },
+    });
+
+    return AppResponse.getResponse('success', {
+      data: {
+        notifications,
+      },
+      message: 'Notifications retrieved successfully',
+    });
   }
 
-  findAll() {
-    return `This action returns all notifications`;
-  }
+  async remove(id: string, userId: string) {
+    const notification = await this.notificationRepository.findOne({
+      where: {
+        id,
+        user: {
+          id: userId,
+        },
+      },
+    });
 
-  findOne(id: number) {
-    return `This action returns a #${id} notification`;
-  }
-
-  update(id: number, updateNotificationDto: UpdateNotificationDto) {
-    return `This action updates a #${id} notification`;
-  }
-
-  remove(id: number) {
-    return `This action removes a #${id} notification`;
+    if (!notification)
+      throw new BadGatewayException(
+        AppResponse.getFailedResponse('Notification does not exists'),
+      );
+    await this.notificationRepository.delete({ id });
+    return AppResponse.getSuccessResponse({
+      message: 'Notification Deleted successfully',
+    });
   }
 }
