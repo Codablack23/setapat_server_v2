@@ -33,7 +33,7 @@ COPY package*.json ./
 RUN npm install --omit=dev
 
 # Copy built app only (no .env copied)
-COPY --from=builder /smartiv_hauz_server/dist ./dist
+COPY --from=builder /setapat_server/dist ./dist
 
 # Expose application port
 EXPOSE 3000
