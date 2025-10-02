@@ -1,7 +1,3 @@
-/* eslint-disable @typescript-eslint/no-unsafe-return */
-/* eslint-disable @typescript-eslint/no-unsafe-call */
-/* eslint-disable @typescript-eslint/no-unsafe-assignment */
-/* eslint-disable @typescript-eslint/no-unsafe-member-access */
 import nodemailer from 'nodemailer';
 import { ENVIRONMENT } from 'src/config';
 
@@ -21,6 +17,7 @@ export class MailerProvider {
   ) {
     const info = await this.transporter.sendMail({
       ...options,
+      sender: 'Setapat',
       from: `"Setapat" <${ENVIRONMENT.MAILER.EMAIL}>`,
     });
     return info;

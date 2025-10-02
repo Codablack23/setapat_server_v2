@@ -11,6 +11,9 @@ export interface IEnvironment {
     EMAIL: string;
     PASSWORD: string;
   };
+  SEEDERS:{
+    SUPER_DESIGNER_PASSWORD:string
+  },
   DB: {
     HOST: string;
     PORT: number;
@@ -58,6 +61,9 @@ export const ENVIRONMENT: IEnvironment = {
   },
   PAYSTACK:{
     PAYSTACK_SECRET:process.env.PAYSTACK_SECRET ?? ""
+  },
+  SEEDERS:{
+    SUPER_DESIGNER_PASSWORD: process.env.SUPER_DESIGNER_PASSWORD ?? ""
   },
   STORAGE:{
     BACKBLAZE_STORAGE_BUCKET:process.env.BACKBLAZE_STORAGE_BUCKET ?? "",

@@ -10,6 +10,8 @@ import {
     UpdateDateColumn,
 } from "typeorm";
 import { OrderEntity } from "./entity.order";
+import { OrderEditEntity } from "./entity.order_edits";
+import { MessageEntity } from "./entity.messages";
 
 
 @Entity({ name: "order_submissions" })
@@ -32,7 +34,7 @@ export class OrderSubmissionEntity {
     page_type: SubmissionPageType
 
     @Column("bigint", { nullable: true })
-    design_page?: number
+    resize_page?: number
 
     @Column({ type: "enum", enum: DesignExportFormats })
     export_format: DesignExportFormats
@@ -64,4 +66,12 @@ export class OrderSubmissionEntity {
     @ManyToOne(() => OrderEntity, (order) => order.submissions)
     @JoinColumn()
     order: OrderEntity
-} 
+    
+    @ManyToOne(() => MessageEntity, (message) => message.order_submissions)
+    @JoinColumn()
+    message: MessageEntity
+
+    @ManyToOne(() => OrderEditEntity, (orderEdit) => orderEdit.submissions, { nullable: true, onDelete: "SET NULL" })
+    @JoinColumn()
+    order_edit?: OrderEditEntity
+}

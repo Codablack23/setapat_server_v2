@@ -6,10 +6,17 @@ export class SeedersController {
   constructor(private readonly seedersService: SeedersService) {}
 
   @Post('designer')
-  seedDesigner() {}
+  seedDesigner() {
+    return this.seedersService.seedDesigner();
+  }
 
   @Post('admin')
   seedAdmin() {}
+
+  @Post('discounts')
+  seedDiscount() {
+    return this.seedersService.seedDiscount();
+  }
 
   @Post('samples')
   seedSamples() {}

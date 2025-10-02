@@ -12,7 +12,7 @@ import {
   Min,
 } from 'class-validator';
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
-import { DesignClass, DesignUnits, DesignPackage } from 'src/lib';
+import { DesignClass, DesignUnits, DesignPackage, designPlans } from 'src/lib';
 
 export class PagesDto {
   @ApiPropertyOptional({
@@ -28,8 +28,8 @@ export class PagesDto {
     description: 'The type of design for the page',
     example: 'Flyer',
   })
-  @IsNotEmpty({ message: 'Please provide a design type' })
-  @IsString({ message: 'Design type must be a string' })
+  @IsNotEmpty({ message: 'Please provide a design type for your page setup' })
+  @IsString({ message: 'Page Design type must be a string' })
   design_type: string;
 
   @ApiProperty({
@@ -69,6 +69,19 @@ export class PagesDto {
   @IsNumber({}, { message: 'Page number must be a number' })
   @Min(1, { message: 'Page number must be at least 1' })
   page_number: number;
+
+  @ApiProperty({
+    description: 'Page Cost',
+    example: 1,
+    minimum: 1,
+  })
+  @IsNotEmpty({ message: 'Please provide page price' })
+  @Type(() => Number)
+  @IsNumber({}, { message: 'Page price must be a number' })
+  @Min(designPlans.BASIC.price.A1, {
+    message: `Page price must be at least ₦${designPlans.BASIC.price.A1.toLocaleString()}`,
+  })
+  price: number;
 
   @ApiProperty({
     description: 'Page width in chosen unit',
@@ -143,6 +156,12 @@ export class CreateOrderDto {
   @IsNumber({}, { message: 'Delivery time must be a number' })
   @Min(1, { message: 'Delivery time must be at least 1' })
   delivery_time: number;
+
+  @IsNotEmpty({ message: 'Please provide amount' })
+  @Type(() => Number)
+  @IsNumber({}, { message: 'Amount must be a number' })
+  @Min(1, { message: 'Amount should atleast be 1' })
+  amount: number;
 
   @ApiProperty({
     description: 'List of pages for the order',

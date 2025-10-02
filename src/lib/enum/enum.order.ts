@@ -51,6 +51,16 @@ export enum Orientation {
   LANDSCAPE = 'LANDSCAPE',
 }
 
+export enum OrderAssignmentStatus {
+  PENDING = `PENDING`,
+  ACCEPTED = 'ACCEPTED',
+  WITHDRAWN = 'WITHDRAWN',
+}
+export enum OrderEditStatus {
+  IN_PROGRESS = `IN_PROGRESS`,
+  COMPLETED = 'COMPLETED',
+}
+
 export enum SubmissionType {
   'ORDER' = 'ORDER',
   'EDIT' = 'EDIT',

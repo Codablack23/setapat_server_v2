@@ -1,0 +1,28 @@
+import { Gender, UserType } from "src/lib";
+import { OrderEntity } from "./entity.order";
+import { NotificationEntity } from "./entity.notification";
+import { DesignerProfileEntity } from "./entity.designer";
+import { MessageEntity } from "./entity.messages";
+import { ConversationParticipantEntity } from "./entity.participants";
+export declare class UserEntity {
+    id: string;
+    firstname: string;
+    lastname: string;
+    email: string;
+    user_type: UserType;
+    gender: Gender;
+    reason?: string;
+    password: string;
+    phone_number: string;
+    avatar: string;
+    telegram_handle?: string;
+    orders: OrderEntity[];
+    designer: DesignerProfileEntity;
+    notifications: NotificationEntity[];
+    sent_messages: MessageEntity[];
+    participants: ConversationParticipantEntity[];
+    hashPassword(): Promise<void>;
+    hashPasswordBeforeUpdate(): Promise<void>;
+    created_at: Date;
+    updated_at: Date;
+}

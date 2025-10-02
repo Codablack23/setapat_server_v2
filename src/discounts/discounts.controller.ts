@@ -9,7 +9,7 @@ import {
   UseGuards,
 } from '@nestjs/common';
 import { DiscountsService } from './discounts.service';
-import { CreateDiscountDto } from './dto/create-discount.dto';
+import { ApplyDiscountDto, CreateDiscountDto } from './dto/create-discount.dto';
 import { UpdateDiscountDto } from './dto/update-discount.dto';
 import { JwtAuthGuard } from 'src/providers';
 import { ApiBearerAuth } from '@nestjs/swagger';
@@ -32,7 +32,7 @@ export class DiscountsController {
 
   @Get(':id')
   findOne(@Param('id') id: string) {
-    return this.discountsService.findOne(+id);
+    return this.discountsService.findOne(id);
   }
 
   @Patch(':id')
@@ -41,6 +41,14 @@ export class DiscountsController {
     @Body() updateDiscountDto: UpdateDiscountDto,
   ) {
     return this.discountsService.update(+id, updateDiscountDto);
+  }
+
+  @Post(':id/apply')
+  appyDiscount(
+    @Param('id') id: string,
+    @Body() applyDiscountDto: ApplyDiscountDto,
+  ) {
+    return this.discountsService.applyDiscount(id, applyDiscountDto);
   }
 
   @Delete(':id')

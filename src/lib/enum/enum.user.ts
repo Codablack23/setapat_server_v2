@@ -5,6 +5,9 @@ export enum UserType{
     BILLERS="BILLERS",
     ADMIN="ADMIN",
 }
+
+export const userTypeList = Object.values(UserType)
+
 export enum Gender{
     MALE="MALE",
     FEMALE="FEMALE",
@@ -12,9 +15,10 @@ export enum Gender{
 
 export enum DesignerRole{
     DESIGNER="DESIGNER",
+    SUPER_DESIGNER="SUPER_DESIGNER",
     SUPERVISOR="SUPERVISOR"
 }
-export enum DesignerLevels{
+export enum DesignerRanks{
    JUNIOR="JUNIOR",
    MID="MID",
    SENIOR="SENIOR",

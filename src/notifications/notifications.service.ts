@@ -18,6 +18,9 @@ export class NotificationsService {
           id: userId,
         },
       },
+      relations: {
+        order: true,
+      },
     });
 
     return AppResponse.getResponse('success', {

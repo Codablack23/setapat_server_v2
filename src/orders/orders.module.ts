@@ -1,3 +1,4 @@
+import { OrderReviewEntity } from 'src/entities/entity.order_reviews';
 import { Module } from '@nestjs/common';
 import { OrdersService } from './orders.service';
 import { OrdersController } from './orders.controller';
@@ -10,6 +11,14 @@ import {
   OrderSubmissionEntity,
 } from 'src/entities';
 import { OrdersUtil } from 'src/lib';
+import { NotificationEntity } from 'src/entities/entity.notification';
+import { DesignerProfileEntity } from 'src/entities/entity.designer';
+import { OrderAssignmentEntity } from 'src/entities/entity.order_assignments';
+import { OrderReceiptEntity } from 'src/entities/entity.order_receipts';
+import { OrderEditEntity } from 'src/entities/entity.order_edits';
+import { OrderEditPageEntity } from 'src/entities/entity.edit_page';
+import { ConversationEntity } from 'src/entities/entity.conversations';
+import { ConversationParticipantEntity } from 'src/entities/entity.participants';
 
 @Module({
   imports: [
@@ -18,7 +27,16 @@ import { OrdersUtil } from 'src/lib';
       OrderPageEntity,
       OrderSubmissionEntity,
       OrderResizeExtraEntity,
+      NotificationEntity,
+      DesignerProfileEntity,
+      OrderAssignmentEntity,
       OrderBriefAttachmentEntity,
+      OrderReviewEntity,
+      OrderReceiptEntity,
+      OrderEditEntity,
+      OrderEditPageEntity,
+      ConversationEntity,
+      ConversationParticipantEntity,
     ]),
   ],
   controllers: [OrdersController],
