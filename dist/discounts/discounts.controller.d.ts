@@ -7,7 +7,7 @@ export declare class DiscountsController {
     create(createDiscountDto: CreateDiscountDto): string;
     findAll(): string;
     findOne(id: string): Promise<{
-        status: "success" | "failed";
+        status: "failed" | "success";
         message: string;
         data: {
             voucher: import("../entities/entity.discount").DiscountEntity;
@@ -15,7 +15,7 @@ export declare class DiscountsController {
     }>;
     update(id: string, updateDiscountDto: UpdateDiscountDto): string;
     appyDiscount(id: string, applyDiscountDto: ApplyDiscountDto): Promise<{
-        status: "success" | "failed";
+        status: "failed" | "success";
         message: string;
         data: {
             voucher: import("../entities/entity.discount").DiscountEntity;
