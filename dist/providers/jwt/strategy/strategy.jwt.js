@@ -36,6 +36,9 @@ let JwtStrategy = class JwtStrategy extends (0, passport_1.PassportStrategy)(pas
             where: {
                 id: payload?.id,
             },
+            relations: {
+                designer: true,
+            },
         });
         if (!userAccount) {
             throw new common_1.UnauthorizedException({

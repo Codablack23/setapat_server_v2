@@ -27,6 +27,9 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
       where: {
         id: payload?.id,
       },
+      relations: {
+        designer: true,
+      },
     });
 
     if (!userAccount) {

@@ -25,6 +25,9 @@ export class LocalStrategy extends PassportStrategy(Strategy) {
       where: {
         email: email,
       },
+      relations: {
+        designer: true,
+      },
     });
     if (!user)
       throw new UnauthorizedException({

@@ -35,6 +35,9 @@ let LocalStrategy = class LocalStrategy extends (0, passport_1.PassportStrategy)
             where: {
                 email: email,
             },
+            relations: {
+                designer: true,
+            },
         });
         if (!user)
             throw new common_1.UnauthorizedException({
