@@ -100,6 +100,7 @@ let AuthService = class AuthService {
                 firstname,
                 lastname,
                 avatar,
+                password: email
             });
             const user = await this.userRepository.save(newUser);
             const res = await this.loginUser(this.removePasswordFromUserObject(user));

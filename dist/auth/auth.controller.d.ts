@@ -5,7 +5,7 @@ export declare class AuthController {
     private readonly authService;
     constructor(authService: AuthService);
     getAuthStatus(req: any): Promise<{
-        status: "failed" | "success";
+        status: "success" | "failed";
         message: string;
         data: {
             token: string;
@@ -13,7 +13,7 @@ export declare class AuthController {
         } | undefined;
     }>;
     login(req: AuthRequest): Promise<{
-        status: "failed" | "success";
+        status: "success" | "failed";
         message: string;
         data: {
             token: string;
@@ -21,7 +21,7 @@ export declare class AuthController {
         } | undefined;
     }>;
     loginWithGoogle({ access_token }: LoginWithGoogleDto): Promise<{
-        status: "failed" | "success";
+        status: "success" | "failed";
         message: string;
         data: {
             token: string;
@@ -29,7 +29,7 @@ export declare class AuthController {
         } | undefined;
     }>;
     register(body: RegisterUserDto): Promise<{
-        status: "failed" | "success";
+        status: "success" | "failed";
         message: string;
         data: {
             token: string;

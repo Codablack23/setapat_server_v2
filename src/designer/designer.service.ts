@@ -1,4 +1,10 @@
-import { DesignPackage, designPlans, SubmissionPageType } from 'src/lib';
+import {
+  DesignPackage,
+  designPlans,
+  RevisionObject,
+  RevisionsPerPage,
+  SubmissionPageType,
+} from 'src/lib';
 /* eslint-disable @typescript-eslint/no-unsafe-assignment */
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
@@ -12,26 +18,6 @@ import {
 } from 'src/lib';
 
 export type OrdersQuery = 'pending' | 'withdrawal';
-
-interface RevisionObject {
-  [page: string]: {
-    total: number;
-    count: number;
-  };
-}
-
-export interface RevisionsPerPage {
-  [page: string]: {
-    total: number;
-    count: number;
-    resize: {
-      [page: string]: {
-        total: number;
-        count: number;
-      };
-    };
-  };
-}
 
 @Injectable()
 export class DesignerService {
@@ -138,51 +124,6 @@ export class DesignerService {
       order: { created_at: 'DESC' },
     });
 
-    const revisionsPerPage: RevisionsPerPage = {};
-    const orderRevision =
-      designPlans[order?.design_package ?? DesignPackage.BASIC].revison;
-    // Pre-group submissions by page type
-    const pageSubmissions = (order?.submissions ?? []).filter(
-      (sub) => sub.page_type === SubmissionPageType.PAGE,
-    );
-    const resizeSubmissions = (order?.submissions ?? []).filter(
-      (sub) => sub.page_type === SubmissionPageType.RESIZE,
-    );
-
-    order?.pages.forEach((page) => {
-      const pageKey = page.page_number.toString();
-
-      // Skip if no revision tracking
-      if (!revisionsPerPage[pageKey]) return;
-
-      // Submissions for this page
-      const currentPageSubs = pageSubmissions.filter(
-        (sub) => sub.page === page.page_number,
-      );
-
-      // Count revisions for resize pages
-      const resize: RevisionObject = {};
-      page.page_resizes.forEach((resizeItem) => {
-        const currentResizeSubs = resizeSubmissions.filter(
-          (sub) =>
-            sub.page === page.page_number &&
-            sub.resize_page === resizeItem.page,
-        );
-
-        resize[resizeItem.page] = {
-          total: orderRevision,
-          count: Math.max(0, currentResizeSubs.length - 1),
-        };
-      });
-
-      // Update revisionPerPage
-      revisionsPerPage[pageKey] = {
-        total: orderRevision,
-        count: Math.max(0, currentPageSubs.length - 1),
-        resize,
-      };
-    });
-
     if (!order)
       throw new NotFoundException({
         status: 'failed',
@@ -191,18 +132,82 @@ export class DesignerService {
       });
 
     const { conversations, ...orderDetails } = order;
-
     const conversation = conversations[0];
+    const revisionsPerPage = await this.getPageRevisionsCount(order?.id);
 
     return AppResponse.getSuccessResponse({
       data: {
         order: {
           ...orderDetails,
           conversation,
+          revisions_per_page: revisionsPerPage,
         },
-        revisions_per_page: revisionsPerPage,
       },
       message: 'Order retrieved successfully',
     });
+  }
+
+  private async getPageRevisionsCount(orderId: string) {
+    try {
+      const order = await this.orderRepo.findOne({
+        where: { id: orderId },
+        relations: {
+          pages: { page_resizes: true },
+          brief_attachments: true,
+          submissions: true,
+          conversations: true,
+          order_edits: { pages: true },
+          resize_extras: { order_page: true },
+        },
+        order: { created_at: 'DESC' },
+      });
+
+      if (!order) return {};
+
+      const revisionsPerPage: RevisionsPerPage = {};
+      const orderRevision =
+        designPlans[order.design_package ?? DesignPackage.BASIC].revison;
+
+      const pageSubmissions = (order.submissions ?? []).filter(
+        (sub) => sub.page_type === SubmissionPageType.PAGE,
+      );
+
+      const resizeSubmissions = (order.submissions ?? []).filter(
+        (sub) => sub.page_type === SubmissionPageType.RESIZE,
+      );
+
+      for (const page of order.pages) {
+        const pageKey = page.page_number.toString();
+
+        const currentPageSubs = pageSubmissions.filter(
+          (sub) => sub.page === page.page_number,
+        );
+
+        const resize: RevisionObject = {};
+        for (const resizeItem of page.page_resizes) {
+          const currentResizeSubs = resizeSubmissions.filter(
+            (sub) =>
+              sub.page === page.page_number &&
+              sub.resize_page === resizeItem.page,
+          );
+
+          resize[resizeItem.page] = {
+            total: orderRevision,
+            count: Math.max(0, currentResizeSubs.length - 1),
+          };
+        }
+
+        revisionsPerPage[pageKey] = {
+          total: orderRevision,
+          count: Math.max(0, currentPageSubs.length - 1),
+          resize,
+        };
+      }
+
+      return revisionsPerPage;
+    } catch (error) {
+      console.log(`Error occurred while generating page revisions: ${error}`);
+      return {};
+    }
   }
 }

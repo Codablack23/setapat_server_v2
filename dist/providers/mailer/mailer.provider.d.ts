@@ -1,4 +1,7 @@
+import Mail from 'nodemailer/lib/mailer';
 export declare class MailerProvider {
-    private static transporter;
-    static sendMail(options: Parameters<typeof this.transporter.sendMail>[0]): Promise<import("nodemailer/lib/smtp-transport").SentMessageInfo>;
+    private static url;
+    private static token;
+    private static zeptoClient;
+    static sendMail(options: Omit<Mail.Options, "from" | "sender">): Promise<void>;
 }

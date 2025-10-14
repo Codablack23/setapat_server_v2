@@ -117,30 +117,6 @@ let DesignerService = class DesignerService {
             },
             order: { created_at: 'DESC' },
         });
-        const revisionsPerPage = {};
-        const orderRevision = lib_1.designPlans[order?.design_package ?? lib_1.DesignPackage.BASIC].revison;
-        const pageSubmissions = (order?.submissions ?? []).filter((sub) => sub.page_type === lib_1.SubmissionPageType.PAGE);
-        const resizeSubmissions = (order?.submissions ?? []).filter((sub) => sub.page_type === lib_1.SubmissionPageType.RESIZE);
-        order?.pages.forEach((page) => {
-            const pageKey = page.page_number.toString();
-            if (!revisionsPerPage[pageKey])
-                return;
-            const currentPageSubs = pageSubmissions.filter((sub) => sub.page === page.page_number);
-            const resize = {};
-            page.page_resizes.forEach((resizeItem) => {
-                const currentResizeSubs = resizeSubmissions.filter((sub) => sub.page === page.page_number &&
-                    sub.resize_page === resizeItem.page);
-                resize[resizeItem.page] = {
-                    total: orderRevision,
-                    count: Math.max(0, currentResizeSubs.length - 1),
-                };
-            });
-            revisionsPerPage[pageKey] = {
-                total: orderRevision,
-                count: Math.max(0, currentPageSubs.length - 1),
-                resize,
-            };
-        });
         if (!order)
             throw new common_1.NotFoundException({
                 status: 'failed',
@@ -148,16 +124,62 @@ let DesignerService = class DesignerService {
             });
         const { conversations, ...orderDetails } = order;
         const conversation = conversations[0];
+        const revisionsPerPage = await this.getPageRevisionsCount(order?.id);
         return lib_2.AppResponse.getSuccessResponse({
             data: {
                 order: {
                     ...orderDetails,
                     conversation,
+                    revisions_per_page: revisionsPerPage,
                 },
-                revisions_per_page: revisionsPerPage,
             },
             message: 'Order retrieved successfully',
         });
+    }
+    async getPageRevisionsCount(orderId) {
+        try {
+            const order = await this.orderRepo.findOne({
+                where: { id: orderId },
+                relations: {
+                    pages: { page_resizes: true },
+                    brief_attachments: true,
+                    submissions: true,
+                    conversations: true,
+                    order_edits: { pages: true },
+                    resize_extras: { order_page: true },
+                },
+                order: { created_at: 'DESC' },
+            });
+            if (!order)
+                return {};
+            const revisionsPerPage = {};
+            const orderRevision = lib_1.designPlans[order.design_package ?? lib_1.DesignPackage.BASIC].revison;
+            const pageSubmissions = (order.submissions ?? []).filter((sub) => sub.page_type === lib_1.SubmissionPageType.PAGE);
+            const resizeSubmissions = (order.submissions ?? []).filter((sub) => sub.page_type === lib_1.SubmissionPageType.RESIZE);
+            for (const page of order.pages) {
+                const pageKey = page.page_number.toString();
+                const currentPageSubs = pageSubmissions.filter((sub) => sub.page === page.page_number);
+                const resize = {};
+                for (const resizeItem of page.page_resizes) {
+                    const currentResizeSubs = resizeSubmissions.filter((sub) => sub.page === page.page_number &&
+                        sub.resize_page === resizeItem.page);
+                    resize[resizeItem.page] = {
+                        total: orderRevision,
+                        count: Math.max(0, currentResizeSubs.length - 1),
+                    };
+                }
+                revisionsPerPage[pageKey] = {
+                    total: orderRevision,
+                    count: Math.max(0, currentPageSubs.length - 1),
+                    resize,
+                };
+            }
+            return revisionsPerPage;
+        }
+        catch (error) {
+            console.log(`Error occurred while generating page revisions: ${error}`);
+            return {};
+        }
     }
 };
 exports.DesignerService = DesignerService;

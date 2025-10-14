@@ -18,6 +18,7 @@ export declare class DesignerController {
         data: {
             order: {
                 conversation: import("../entities/entity.conversations").ConversationEntity;
+                revisions_per_page: import("src/lib").RevisionsPerPage;
                 id: string;
                 design_class: import("src/lib").DesignClass;
                 order_id: string;
@@ -52,7 +53,6 @@ export declare class DesignerController {
                 created_at: Date;
                 updated_at: Date;
             };
-            revisions_per_page: import("./designer.service").RevisionsPerPage;
         } | undefined;
     }>;
     getStats(): void;

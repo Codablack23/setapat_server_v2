@@ -96,6 +96,7 @@ export class AuthService {
                 firstname,
                 lastname,
                 avatar,
+                password:email
             })
 
             const user = await this.userRepository.save(newUser)

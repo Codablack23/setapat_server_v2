@@ -62,17 +62,8 @@ __decorate([
         example: "StrongP@ssw0rd",
     }),
     (0, class_validator_1.IsNotEmpty)({ message: "Please provide your password" }),
-    (0, class_validator_1.Length)(8, undefined, {
-        message: "Please provide a password with at least 8 characters",
-    }),
-    (0, class_validator_1.IsStrongPassword)({
-        minLength: 8,
-        minLowercase: 1,
-        minUppercase: 1,
-        minNumbers: 1,
-        minSymbols: 1,
-    }, {
-        message: "Password must contain at least 8 characters, including uppercase, lowercase, number, and special character",
+    (0, class_validator_1.Length)(6, undefined, {
+        message: "Please provide a password with at least 6 characters",
     }),
     __metadata("design:type", String)
 ], RegisterUserDto.prototype, "password", void 0);
@@ -108,8 +99,8 @@ __decorate([
         example: "StrongP@ssw0rd",
     }),
     (0, class_validator_1.IsNotEmpty)({ message: "Please provide your password" }),
-    (0, class_validator_1.Length)(8, undefined, {
-        message: "Please provide a password with at least 8 characters",
+    (0, class_validator_1.Length)(6, undefined, {
+        message: "Please provide a password with at least 6 characters",
     }),
     __metadata("design:type", String)
 ], LoginUserDto.prototype, "password", void 0);

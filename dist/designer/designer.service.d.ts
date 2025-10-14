@@ -1,20 +1,8 @@
-import { DesignPackage } from 'src/lib';
+import { DesignPackage, RevisionsPerPage } from 'src/lib';
 import { Repository } from 'typeorm';
 import { OrderEntity } from 'src/entities';
 import { OrderStatus } from 'src/lib';
 export type OrdersQuery = 'pending' | 'withdrawal';
-export interface RevisionsPerPage {
-    [page: string]: {
-        total: number;
-        count: number;
-        resize: {
-            [page: string]: {
-                total: number;
-                count: number;
-            };
-        };
-    };
-}
 export declare class DesignerService {
     private readonly orderRepo;
     constructor(orderRepo: Repository<OrderEntity>);
@@ -32,6 +20,7 @@ export declare class DesignerService {
         data: {
             order: {
                 conversation: import("../entities/entity.conversations").ConversationEntity;
+                revisions_per_page: RevisionsPerPage;
                 id: string;
                 design_class: import("src/lib").DesignClass;
                 order_id: string;
@@ -66,7 +55,7 @@ export declare class DesignerService {
                 created_at: Date;
                 updated_at: Date;
             };
-            revisions_per_page: RevisionsPerPage;
         } | undefined;
     }>;
+    private getPageRevisionsCount;
 }
