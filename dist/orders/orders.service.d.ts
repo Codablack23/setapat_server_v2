@@ -1,3 +1,4 @@
+import { MessageEntity } from './../entities/entity.messages';
 import { ConversationEntity } from './../entities/entity.conversations';
 import { AddDesignBriefDto, AddOrderSubmissionsDto, CreateOrderReviewDto, MakeOrderConfidentialDto } from './dto/update-order.dto';
 import { CreateOrderDto } from './dto/create-order.dto';
@@ -29,8 +30,9 @@ export declare class OrdersService {
     private readonly orderEditRepo;
     private readonly orderEditPageRepo;
     private readonly conversationRepo;
+    private readonly messageRepo;
     private readonly participantsRepo;
-    constructor(orderUtil: OrdersUtil, orderRepository: Repository<OrderEntity>, orderPageRepository: Repository<OrderPageEntity>, orderAssignmentRepo: Repository<OrderAssignmentEntity>, designerRepo: Repository<DesignerProfileEntity>, orderBriefAttachmentRepo: Repository<OrderBriefAttachmentEntity>, orderResizeExtraRepo: Repository<OrderResizeExtraEntity>, notificationRepo: Repository<NotificationEntity>, orderSubmissionRepo: Repository<OrderSubmissionEntity>, orderReviewRepo: Repository<OrderReviewEntity>, orderReceiptRepo: Repository<OrderReceiptEntity>, orderEditRepo: Repository<OrderEditEntity>, orderEditPageRepo: Repository<OrderEditPageEntity>, conversationRepo: Repository<ConversationEntity>, participantsRepo: Repository<ConversationParticipantEntity>);
+    constructor(orderUtil: OrdersUtil, orderRepository: Repository<OrderEntity>, orderPageRepository: Repository<OrderPageEntity>, orderAssignmentRepo: Repository<OrderAssignmentEntity>, designerRepo: Repository<DesignerProfileEntity>, orderBriefAttachmentRepo: Repository<OrderBriefAttachmentEntity>, orderResizeExtraRepo: Repository<OrderResizeExtraEntity>, notificationRepo: Repository<NotificationEntity>, orderSubmissionRepo: Repository<OrderSubmissionEntity>, orderReviewRepo: Repository<OrderReviewEntity>, orderReceiptRepo: Repository<OrderReceiptEntity>, orderEditRepo: Repository<OrderEditEntity>, orderEditPageRepo: Repository<OrderEditPageEntity>, conversationRepo: Repository<ConversationEntity>, messageRepo: Repository<MessageEntity>, participantsRepo: Repository<ConversationParticipantEntity>);
     reviewOrder(userId: string, id: string, dto: CreateOrderReviewDto): Promise<{
         status: "failed" | "success";
         message: string;
@@ -138,7 +140,7 @@ export declare class OrdersService {
                 order_assignments: OrderAssignmentEntity[];
                 brief_attachments: OrderBriefAttachmentEntity[];
                 pages: OrderPageEntity[];
-                submissions: OrderPageEntity[];
+                submissions: OrderSubmissionEntity[];
                 reviews: OrderReviewEntity[];
                 receipts: OrderReceiptEntity[];
                 notifications: NotificationEntity[];

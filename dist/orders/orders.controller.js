@@ -98,7 +98,7 @@ __decorate([
 ], OrdersController.prototype, "findOne", null);
 __decorate([
     (0, common_1.UseGuards)(lib_1.UserRoleGuard),
-    (0, lib_1.Roles)(lib_1.UserType.USER),
+    (0, lib_1.Roles)(lib_1.UserType.DESIGNER),
     (0, common_1.Post)(':id/submit'),
     __param(0, (0, common_1.Request)()),
     __param(1, (0, common_1.Param)('id')),

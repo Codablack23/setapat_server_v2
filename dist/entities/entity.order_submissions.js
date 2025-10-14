@@ -80,11 +80,11 @@ __decorate([
 ], OrderSubmissionEntity.prototype, "file_size", void 0);
 __decorate([
     (0, typeorm_1.Column)({ type: "enum", enum: lib_1.AttachmentTypes }),
-    __metadata("design:type", Number)
+    __metadata("design:type", String)
 ], OrderSubmissionEntity.prototype, "file_type", void 0);
 __decorate([
     (0, typeorm_1.Column)("text"),
-    __metadata("design:type", Number)
+    __metadata("design:type", String)
 ], OrderSubmissionEntity.prototype, "file_extension", void 0);
 __decorate([
     (0, typeorm_1.CreateDateColumn)(),

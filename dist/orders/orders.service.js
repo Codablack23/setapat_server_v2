@@ -13,6 +13,7 @@ var __param = (this && this.__param) || function (paramIndex, decorator) {
 };
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.OrdersService = void 0;
+const entity_messages_1 = require("./../entities/entity.messages");
 const entity_conversations_1 = require("./../entities/entity.conversations");
 const common_1 = require("@nestjs/common");
 const lib_1 = require("../lib");
@@ -46,8 +47,9 @@ let OrdersService = class OrdersService {
     orderEditRepo;
     orderEditPageRepo;
     conversationRepo;
+    messageRepo;
     participantsRepo;
-    constructor(orderUtil, orderRepository, orderPageRepository, orderAssignmentRepo, designerRepo, orderBriefAttachmentRepo, orderResizeExtraRepo, notificationRepo, orderSubmissionRepo, orderReviewRepo, orderReceiptRepo, orderEditRepo, orderEditPageRepo, conversationRepo, participantsRepo) {
+    constructor(orderUtil, orderRepository, orderPageRepository, orderAssignmentRepo, designerRepo, orderBriefAttachmentRepo, orderResizeExtraRepo, notificationRepo, orderSubmissionRepo, orderReviewRepo, orderReceiptRepo, orderEditRepo, orderEditPageRepo, conversationRepo, messageRepo, participantsRepo) {
         this.orderUtil = orderUtil;
         this.orderRepository = orderRepository;
         this.orderPageRepository = orderPageRepository;
@@ -62,6 +64,7 @@ let OrdersService = class OrdersService {
         this.orderEditRepo = orderEditRepo;
         this.orderEditPageRepo = orderEditPageRepo;
         this.conversationRepo = conversationRepo;
+        this.messageRepo = messageRepo;
         this.participantsRepo = participantsRepo;
     }
     async reviewOrder(userId, id, dto) {
@@ -153,6 +156,7 @@ let OrdersService = class OrdersService {
             },
             relations: {
                 order_assignments: true,
+                conversations: true,
                 user: true,
             },
         });
@@ -198,7 +202,18 @@ let OrdersService = class OrdersService {
             order,
             type: lib_1.SubmissionType.ORDER,
         }));
-        await this.orderSubmissionRepo.save(newSubmissions);
+        const conversation = order.conversations[0];
+        const submissions = await this.orderSubmissionRepo.save(newSubmissions);
+        const newMessage = this.messageRepo.create({
+            content: '',
+            sender: {
+                id: userId,
+            },
+            type: lib_1.MessageType.SUBMISSION,
+            order_submissions: submissions,
+            conversation: conversation,
+        });
+        await this.messageRepo.save(newMessage);
         this.sendSubmissionNotification(order.user, order).catch((err) => {
             console.error(`Failed to send submission notification for order ${order.order_id}:`, err);
         });
@@ -411,7 +426,7 @@ let OrdersService = class OrdersService {
         const pages = await Promise.all(orderPages.map(async (page) => {
             const newPageInstance = this.orderPageRepository.create({
                 ...page,
-                price: page.price * 100,
+                price: page.price,
             });
             return await this.orderPageRepository.save(newPageInstance);
         }));
@@ -719,41 +734,40 @@ let OrdersService = class OrdersService {
     }
     async addDesignBrief(userId, id, addDesignBriefDto) {
         const order = await this.orderRepository.findOne({
-            where: {
-                id,
-                user: {
-                    id: userId,
-                },
-            },
+            where: { id, user: { id: userId } },
+            relations: ['pages'],
         });
         if (!order)
             throw new common_1.BadRequestException(lib_1.AppResponse.getFailedResponse('Order does not exist'));
-        if (order.status != lib_1.OrderStatus.DRAFT) {
-            throw new common_1.ForbiddenException(lib_1.AppResponse.getFailedResponse('This order can no longer be order please create a new order or request for an edit'));
+        if (order.status !== lib_1.OrderStatus.DRAFT) {
+            throw new common_1.ForbiddenException(lib_1.AppResponse.getFailedResponse('This order can no longer be updated. Please create a new order or request an edit.'));
         }
-        const resizeExtras = addDesignBriefDto.resize_extras
-            ? await Promise.all(addDesignBriefDto.resize_extras?.map(async (item) => {
-                const orderPage = await this.orderPageRepository.findOne({
-                    where: {
-                        page_number: item.design_page,
-                    },
-                });
-                const resize = this.orderResizeExtraRepo.create({
-                    ...item,
-                    price: item.price * 100,
-                    order_page: orderPage ?? undefined,
-                });
-                return await this.orderResizeExtraRepo.save(resize);
-            }))
-            : [];
+        const pages = await this.orderPageRepository.find({
+            where: { order: { id } },
+            relations: ['page_resizes'],
+        });
+        for (const page of pages) {
+            const resizes = addDesignBriefDto.resize_extras?.filter((item) => item.design_page === page.page_number) ?? [];
+            if (page.page_resizes?.length) {
+                await this.orderResizeExtraRepo.remove(page.page_resizes);
+            }
+            const newResizes = resizes.map((item) => this.orderResizeExtraRepo.create({
+                ...item,
+                price: item.price,
+                order,
+                order_page: page,
+            }));
+            const savedResizes = await this.orderResizeExtraRepo.save(newResizes);
+            page.page_resizes = savedResizes;
+            await this.orderPageRepository.save(page);
+        }
         const briefAttachments = addDesignBriefDto.brief_attachments
-            ? await Promise.all(addDesignBriefDto.brief_attachments?.map(async (item) => {
-                const resize = this.orderBriefAttachmentRepo.create(item);
-                return await this.orderBriefAttachmentRepo.save(resize);
+            ? await Promise.all(addDesignBriefDto.brief_attachments.map(async (item) => {
+                const attachment = this.orderBriefAttachmentRepo.create(item);
+                return await this.orderBriefAttachmentRepo.save(attachment);
             }))
             : [];
         order.brief_attachments = briefAttachments;
-        order.resize_extras = resizeExtras;
         order.design_brief = addDesignBriefDto.design_brief;
         order.design_assets = addDesignBriefDto.design_assets;
         order.design_preferences = addDesignBriefDto.design_preference;
@@ -761,9 +775,7 @@ let OrdersService = class OrdersService {
         await this.orderRepository.save(order);
         return lib_1.AppResponse.getSuccessResponse({
             message: 'Design brief added successfully',
-            data: {
-                details: addDesignBriefDto,
-            },
+            data: { details: addDesignBriefDto },
         });
     }
 };
@@ -783,8 +795,10 @@ exports.OrdersService = OrdersService = __decorate([
     __param(11, (0, typeorm_1.InjectRepository)(entity_order_edits_1.OrderEditEntity)),
     __param(12, (0, typeorm_1.InjectRepository)(entity_edit_page_1.OrderEditPageEntity)),
     __param(13, (0, typeorm_1.InjectRepository)(entity_conversations_1.ConversationEntity)),
-    __param(14, (0, typeorm_1.InjectRepository)(entity_participants_1.ConversationParticipantEntity)),
+    __param(14, (0, typeorm_1.InjectRepository)(entity_messages_1.MessageEntity)),
+    __param(15, (0, typeorm_1.InjectRepository)(entity_participants_1.ConversationParticipantEntity)),
     __metadata("design:paramtypes", [lib_1.OrdersUtil,
+        typeorm_2.Repository,
         typeorm_2.Repository,
         typeorm_2.Repository,
         typeorm_2.Repository,

@@ -45,7 +45,7 @@ export class ConversationsService {
     // Step 2: Fetch messages
     const messages = await this.messageRepo.find({
       where: { conversation: { id } },
-      relations: { sender: true, attachments: true },
+      relations: { sender: true, attachments: true, order_submissions: true },
       order: { created_at: 'ASC' },
       take: 100, // 🔹 default pagination
     });

@@ -1,20 +1,33 @@
+import { DesignPackage } from 'src/lib';
 import { Repository } from 'typeorm';
 import { OrderEntity } from 'src/entities';
 import { OrderStatus } from 'src/lib';
 export type OrdersQuery = 'pending' | 'withdrawal';
+export interface RevisionsPerPage {
+    [page: string]: {
+        total: number;
+        count: number;
+        resize: {
+            [page: string]: {
+                total: number;
+                count: number;
+            };
+        };
+    };
+}
 export declare class DesignerService {
     private readonly orderRepo;
     constructor(orderRepo: Repository<OrderEntity>);
     private sortOrders;
     getOrders(userId: string, query?: OrdersQuery): Promise<{
-        status: "success" | "failed";
+        status: "failed" | "success";
         message: string;
         data: {
             orders: OrderEntity[];
         } | undefined;
     }>;
     getOrder(userId: string, orderId: string): Promise<{
-        status: "success" | "failed";
+        status: "failed" | "success";
         message: string;
         data: {
             order: {
@@ -23,7 +36,7 @@ export declare class DesignerService {
                 design_class: import("src/lib").DesignClass;
                 order_id: string;
                 design_brief: string;
-                design_package: import("src/lib").DesignPackage;
+                design_package: DesignPackage;
                 type: import("src/lib").OrderType;
                 design_type: string;
                 design_assets?: any;
@@ -44,7 +57,7 @@ export declare class DesignerService {
                 order_assignments: import("../entities/entity.order_assignments").OrderAssignmentEntity[];
                 brief_attachments: import("src/entities").OrderBriefAttachmentEntity[];
                 pages: import("src/entities").OrderPageEntity[];
-                submissions: import("src/entities").OrderPageEntity[];
+                submissions: import("src/entities").OrderSubmissionEntity[];
                 reviews: import("../entities/entity.order_reviews").OrderReviewEntity[];
                 receipts: import("../entities/entity.order_receipts").OrderReceiptEntity[];
                 notifications: import("../entities/entity.notification").NotificationEntity[];
@@ -53,6 +66,7 @@ export declare class DesignerService {
                 created_at: Date;
                 updated_at: Date;
             };
+            revisions_per_page: RevisionsPerPage;
         } | undefined;
     }>;
 }

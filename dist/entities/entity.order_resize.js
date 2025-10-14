@@ -48,8 +48,17 @@ __decorate([
 __decorate([
     (0, typeorm_1.Column)('bigint', {
         transformer: {
-            to: (value) => Math.round(value * 100),
-            from: (value) => Number(value) / 100,
+            to: (value) => {
+                if (value == null)
+                    return 0;
+                const num = Number(value);
+                return Math.round(num * 100);
+            },
+            from: (value) => {
+                if (!value)
+                    return 0;
+                return Number(value) / 100;
+            },
         },
         default: schema_1.RESIZE_COST * 100,
     }),

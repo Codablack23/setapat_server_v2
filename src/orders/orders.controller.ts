@@ -44,7 +44,7 @@ export class OrdersController {
   }
 
   @UseGuards(UserRoleGuard)
-  @Roles(UserType.USER)
+  @Roles(UserType.DESIGNER)
   @Post(':id/submit')
   submitOrder(
     @Request() req: AuthRequest,

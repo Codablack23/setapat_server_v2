@@ -22,6 +22,7 @@ const entity_order_edits_1 = require("../entities/entity.order_edits");
 const entity_edit_page_1 = require("../entities/entity.edit_page");
 const entity_conversations_1 = require("../entities/entity.conversations");
 const entity_participants_1 = require("../entities/entity.participants");
+const entity_messages_1 = require("../entities/entity.messages");
 let OrdersModule = class OrdersModule {
 };
 exports.OrdersModule = OrdersModule;
@@ -43,6 +44,7 @@ exports.OrdersModule = OrdersModule = __decorate([
                 entity_edit_page_1.OrderEditPageEntity,
                 entity_conversations_1.ConversationEntity,
                 entity_participants_1.ConversationParticipantEntity,
+                entity_messages_1.MessageEntity,
             ]),
         ],
         controllers: [orders_controller_1.OrdersController],

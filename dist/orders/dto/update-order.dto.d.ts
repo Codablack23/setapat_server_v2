@@ -41,8 +41,8 @@ export declare class OrderSubmissionDto {
     file_url: string;
     file_name: string;
     file_size?: number;
-    file_type: number;
-    file_extension: number;
+    file_type: AttachmentTypes;
+    file_extension: string;
 }
 export declare class AddOrderSubmissionsDto {
     submissions: OrderSubmissionDto[];

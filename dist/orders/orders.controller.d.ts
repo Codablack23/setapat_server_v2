@@ -52,7 +52,7 @@ export declare class OrdersController {
                 order_assignments: import("../entities/entity.order_assignments").OrderAssignmentEntity[];
                 brief_attachments: import("../entities").OrderBriefAttachmentEntity[];
                 pages: import("../entities").OrderPageEntity[];
-                submissions: import("../entities").OrderPageEntity[];
+                submissions: import("../entities").OrderSubmissionEntity[];
                 reviews: import("../entities/entity.order_reviews").OrderReviewEntity[];
                 receipts: import("../entities/entity.order_receipts").OrderReceiptEntity[];
                 notifications: import("../entities/entity.notification").NotificationEntity[];

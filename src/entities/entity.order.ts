@@ -110,7 +110,7 @@ export class OrderEntity {
     pages: OrderPageEntity[]
 
     @OneToMany(() => OrderSubmissionEntity, (submissions) => submissions.order,{cascade:true})
-    submissions: OrderPageEntity[]
+    submissions: OrderSubmissionEntity[]
 
     @OneToMany(() => ConversationEntity, (conversations) => conversations.order,{cascade:true})
     conversations: ConversationEntity[]

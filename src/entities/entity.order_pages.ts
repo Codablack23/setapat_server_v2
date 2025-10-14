@@ -1,5 +1,4 @@
 import { DesignUnits, Orientation } from '../lib';
-import { designPlans } from '../lib/schema';
 import {
   Entity,
   PrimaryGeneratedColumn,
@@ -37,15 +36,21 @@ export class OrderPageEntity {
   @Column({ type: 'enum', enum: Orientation, nullable: false })
   orientation: Orientation;
 
-  @Column({ name: 'page_number', type: 'bigint', nullable: false })
+  @Column({ name: 'page_number', type: 'int', nullable: false })
   page_number: number;
 
   @Column({
     type: 'bigint',
-    default: designPlans.BASIC.price.A * 100,
     transformer: {
-      to: (value: number) => Math.round(value * 100), // multiply by 100 before save
-      from: (value: string) => Number(value) / 100, // divide by 100 when reading
+      to: (value?: number | string) => {
+        if (value == null) return 0;
+        const num = Number(value);
+        return Math.round(num * 100); // ensure numeric conversion
+      },
+      from: (value?: string) => {
+        if (!value) return 0;
+        return Number(value) / 100;
+      },
     },
   })
   price: number;
@@ -53,8 +58,12 @@ export class OrderPageEntity {
   @Column({
     type: 'bigint',
     transformer: {
-      to: (value: number) => Math.round(value * 100), // multiply by 100 before save
-      from: (value: string) => Number(value) / 100, // divide by 100 when reading
+      to: (value?: number | string) => {
+        if (value == null) return '0';
+        const num = Number(value);
+        return String(Math.round(num * 100)); // return string to avoid bigint overflow
+      },
+      from: (value?: string) => Number(value) / 100,
     },
     nullable: false,
   })

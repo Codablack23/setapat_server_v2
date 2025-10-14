@@ -26,9 +26,16 @@ export class OrderResizeExtraEntity {
   page: number;
 
   @Column('bigint', {
-    transformer: {
-      to: (value: number) => Math.round(value * 100), // multiply by 100 before save
-      from: (value: string) => Number(value) / 100, // divide by 100 when reading
+   transformer: {
+      to: (value?: number | string) => {
+        if (value == null) return 0;
+        const num = Number(value);
+        return Math.round(num * 100); // ensure numeric conversion
+      },
+      from: (value?: string) => {
+        if (!value) return 0;
+        return Number(value) / 100;
+      },
     },
     default: RESIZE_COST * 100,
   })

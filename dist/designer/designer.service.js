@@ -13,11 +13,12 @@ var __param = (this && this.__param) || function (paramIndex, decorator) {
 };
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.DesignerService = void 0;
+const lib_1 = require("../lib");
 const common_1 = require("@nestjs/common");
 const typeorm_1 = require("@nestjs/typeorm");
 const typeorm_2 = require("typeorm");
 const entities_1 = require("../entities");
-const lib_1 = require("../lib");
+const lib_2 = require("../lib");
 let DesignerService = class DesignerService {
     orderRepo;
     constructor(orderRepo) {
@@ -42,25 +43,25 @@ let DesignerService = class DesignerService {
                 {
                     ...baseWhere,
                     status: (0, typeorm_2.In)([
-                        lib_1.OrderStatus.IN_PROGRESS,
-                        lib_1.OrderStatus.PENDING,
-                        lib_1.OrderStatus.EDIT,
+                        lib_2.OrderStatus.IN_PROGRESS,
+                        lib_2.OrderStatus.PENDING,
+                        lib_2.OrderStatus.EDIT,
                     ]),
                 },
                 {
                     ...baseWhere,
-                    status: (0, typeorm_2.Not)(lib_1.OrderStatus.DRAFT),
-                    order_edits: { status: lib_1.OrderEditStatus.IN_PROGRESS },
+                    status: (0, typeorm_2.Not)(lib_2.OrderStatus.DRAFT),
+                    order_edits: { status: lib_2.OrderEditStatus.IN_PROGRESS },
                 },
             ];
         }
         else if (query === 'withdrawal') {
             where = [
                 {
-                    status: (0, typeorm_2.Not)(lib_1.OrderStatus.DRAFT),
+                    status: (0, typeorm_2.Not)(lib_2.OrderStatus.DRAFT),
                     order_assignments: {
                         ...baseWhere.order_assignments,
-                        status: lib_1.OrderAssignmentStatus.WITHDRAWN,
+                        status: lib_2.OrderAssignmentStatus.WITHDRAWN,
                     },
                 },
             ];
@@ -75,7 +76,7 @@ let DesignerService = class DesignerService {
             },
             order: { created_at: 'DESC' },
         });
-        return lib_1.AppResponse.getSuccessResponse({
+        return lib_2.AppResponse.getSuccessResponse({
             data: { orders: this.sortOrders(orders) },
             message: 'Orders retrieved successfully',
         });
@@ -93,10 +94,20 @@ let DesignerService = class DesignerService {
                 },
             },
             relations: {
-                pages: true,
+                pages: {
+                    page_resizes: true,
+                },
                 brief_attachments: true,
                 submissions: true,
                 conversations: true,
+                order_edits: {
+                    pages: true,
+                },
+                order_assignments: {
+                    designer: {
+                        user: true,
+                    },
+                },
                 discount: {
                     discount: true,
                 },
@@ -106,6 +117,30 @@ let DesignerService = class DesignerService {
             },
             order: { created_at: 'DESC' },
         });
+        const revisionsPerPage = {};
+        const orderRevision = lib_1.designPlans[order?.design_package ?? lib_1.DesignPackage.BASIC].revison;
+        const pageSubmissions = (order?.submissions ?? []).filter((sub) => sub.page_type === lib_1.SubmissionPageType.PAGE);
+        const resizeSubmissions = (order?.submissions ?? []).filter((sub) => sub.page_type === lib_1.SubmissionPageType.RESIZE);
+        order?.pages.forEach((page) => {
+            const pageKey = page.page_number.toString();
+            if (!revisionsPerPage[pageKey])
+                return;
+            const currentPageSubs = pageSubmissions.filter((sub) => sub.page === page.page_number);
+            const resize = {};
+            page.page_resizes.forEach((resizeItem) => {
+                const currentResizeSubs = resizeSubmissions.filter((sub) => sub.page === page.page_number &&
+                    sub.resize_page === resizeItem.page);
+                resize[resizeItem.page] = {
+                    total: orderRevision,
+                    count: Math.max(0, currentResizeSubs.length - 1),
+                };
+            });
+            revisionsPerPage[pageKey] = {
+                total: orderRevision,
+                count: Math.max(0, currentPageSubs.length - 1),
+                resize,
+            };
+        });
         if (!order)
             throw new common_1.NotFoundException({
                 status: 'failed',
@@ -113,12 +148,13 @@ let DesignerService = class DesignerService {
             });
         const { conversations, ...orderDetails } = order;
         const conversation = conversations[0];
-        return lib_1.AppResponse.getSuccessResponse({
+        return lib_2.AppResponse.getSuccessResponse({
             data: {
                 order: {
                     ...orderDetails,
                     conversation,
                 },
+                revisions_per_page: revisionsPerPage,
             },
             message: 'Order retrieved successfully',
         });

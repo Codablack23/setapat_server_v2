@@ -19,6 +19,7 @@ import { OrderEditEntity } from 'src/entities/entity.order_edits';
 import { OrderEditPageEntity } from 'src/entities/entity.edit_page';
 import { ConversationEntity } from 'src/entities/entity.conversations';
 import { ConversationParticipantEntity } from 'src/entities/entity.participants';
+import { MessageEntity } from 'src/entities/entity.messages';
 
 @Module({
   imports: [
@@ -37,6 +38,7 @@ import { ConversationParticipantEntity } from 'src/entities/entity.participants'
       OrderEditPageEntity,
       ConversationEntity,
       ConversationParticipantEntity,
+      MessageEntity,
     ]),
   ],
   controllers: [OrdersController],

@@ -1,3 +1,4 @@
+import { MessageEntity } from './../entities/entity.messages';
 import { ConversationEntity } from './../entities/entity.conversations';
 import {
   AddDesignBriefDto,
@@ -21,6 +22,7 @@ import {
   ConversationStatus,
   ConversationType,
   DesignerRole,
+  MessageType,
   OrderAssignmentStatus,
   OrderEditStatus,
   OrderStatus,
@@ -97,6 +99,9 @@ export class OrdersService {
 
     @InjectRepository(ConversationEntity)
     private readonly conversationRepo: Repository<ConversationEntity>,
+
+    @InjectRepository(MessageEntity)
+    private readonly messageRepo: Repository<MessageEntity>,
 
     @InjectRepository(ConversationParticipantEntity)
     private readonly participantsRepo: Repository<ConversationParticipantEntity>,
@@ -233,6 +238,7 @@ export class OrdersService {
       },
       relations: {
         order_assignments: true,
+        conversations: true,
         user: true,
       },
     });
@@ -307,7 +313,20 @@ export class OrdersService {
       }),
     );
 
-    await this.orderSubmissionRepo.save(newSubmissions);
+    const conversation = order.conversations[0];
+
+    const submissions = await this.orderSubmissionRepo.save(newSubmissions);
+    const newMessage = this.messageRepo.create({
+      content: '',
+      sender: {
+        id: userId,
+      },
+      type: MessageType.SUBMISSION,
+      order_submissions: submissions,
+      conversation: conversation,
+    });
+
+    await this.messageRepo.save(newMessage);
 
     // Send submission notification asynchronously (non-blocking)
     this.sendSubmissionNotification(order.user, order).catch((err) => {
@@ -635,7 +654,7 @@ export class OrdersService {
       orderPages.map(async (page) => {
         const newPageInstance = this.orderPageRepository.create({
           ...page,
-          price: page.price * 100,
+          price: page.price,
         });
         return await this.orderPageRepository.save(newPageInstance);
       }),
@@ -1052,55 +1071,70 @@ export class OrdersService {
     addDesignBriefDto: AddDesignBriefDto,
   ) {
     const order = await this.orderRepository.findOne({
-      where: {
-        id,
-        user: {
-          id: userId,
-        },
-      },
+      where: { id, user: { id: userId } },
+      relations: ['pages'], // preload pages if you want them in memory
     });
+
     if (!order)
       throw new BadRequestException(
         AppResponse.getFailedResponse('Order does not exist'),
       );
-    if (order.status != OrderStatus.DRAFT) {
+
+    if (order.status !== OrderStatus.DRAFT) {
       throw new ForbiddenException(
         AppResponse.getFailedResponse(
-          'This order can no longer be order please create a new order or request for an edit',
+          'This order can no longer be updated. Please create a new order or request an edit.',
         ),
       );
     }
 
-    const resizeExtras = addDesignBriefDto.resize_extras
-      ? await Promise.all(
-          addDesignBriefDto.resize_extras?.map(async (item) => {
-            const orderPage = await this.orderPageRepository.findOne({
-              where: {
-                page_number: item.design_page,
-              },
-            });
+    // Fetch pages
+    const pages = await this.orderPageRepository.find({
+      where: { order: { id } },
+      relations: ['page_resizes'], // so we can manage them cleanly
+    });
 
-            const resize = this.orderResizeExtraRepo.create({
-              ...item,
-              price: item.price * 100,
-              order_page: orderPage ?? undefined,
-            });
-            return await this.orderResizeExtraRepo.save(resize);
-          }),
-        )
-      : [];
+    // Map resize extras by page
+    for (const page of pages) {
+      const resizes =
+        addDesignBriefDto.resize_extras?.filter(
+          (item) => item.design_page === page.page_number,
+        ) ?? [];
 
+      // Delete old resizes if you want a full replacement
+      if (page.page_resizes?.length) {
+        await this.orderResizeExtraRepo.remove(page.page_resizes);
+      }
+
+      const newResizes = resizes.map((item) =>
+        this.orderResizeExtraRepo.create({
+          ...item,
+          price: item.price, // apply multiplier
+          order,
+          order_page: page, // ✅ important
+        }),
+      );
+
+      // save all new ones at once
+      const savedResizes = await this.orderResizeExtraRepo.save(newResizes);
+
+      // attach back to page
+      page.page_resizes = savedResizes;
+      await this.orderPageRepository.save(page);
+    }
+
+    // Brief attachments
     const briefAttachments = addDesignBriefDto.brief_attachments
       ? await Promise.all(
-          addDesignBriefDto.brief_attachments?.map(async (item) => {
-            const resize = this.orderBriefAttachmentRepo.create(item);
-            return await this.orderBriefAttachmentRepo.save(resize);
+          addDesignBriefDto.brief_attachments.map(async (item) => {
+            const attachment = this.orderBriefAttachmentRepo.create(item);
+            return await this.orderBriefAttachmentRepo.save(attachment);
           }),
         )
       : [];
 
+    // Update main order
     order.brief_attachments = briefAttachments;
-    order.resize_extras = resizeExtras;
     order.design_brief = addDesignBriefDto.design_brief;
     order.design_assets = addDesignBriefDto.design_assets;
     order.design_preferences = addDesignBriefDto.design_preference;
@@ -1110,9 +1144,7 @@ export class OrdersService {
 
     return AppResponse.getSuccessResponse({
       message: 'Design brief added successfully',
-      data: {
-        details: addDesignBriefDto,
-      },
+      data: { details: addDesignBriefDto },
     });
   }
 }

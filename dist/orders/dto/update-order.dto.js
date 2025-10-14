@@ -302,12 +302,12 @@ __decorate([
 __decorate([
     (0, swagger_1.ApiProperty)({ enum: lib_1.AttachmentTypes, description: 'Attachment type' }),
     (0, class_validator_1.IsEnum)(lib_1.AttachmentTypes),
-    __metadata("design:type", Number)
+    __metadata("design:type", String)
 ], OrderSubmissionDto.prototype, "file_type", void 0);
 __decorate([
     (0, swagger_1.ApiProperty)({ example: 'png', description: 'File extension' }),
     (0, class_validator_1.IsString)(),
-    __metadata("design:type", Number)
+    __metadata("design:type", String)
 ], OrderSubmissionDto.prototype, "file_extension", void 0);
 class AddOrderSubmissionsDto {
     submissions;

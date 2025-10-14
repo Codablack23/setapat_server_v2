@@ -52,10 +52,10 @@ export class OrderSubmissionEntity {
     file_size: number
 
     @Column({ type: "enum", enum: AttachmentTypes })
-    file_type: number
+    file_type: AttachmentTypes
 
     @Column("text")
-    file_extension: number
+    file_extension: string
 
     @CreateDateColumn()
     created_at: Date

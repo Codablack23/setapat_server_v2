@@ -1,4 +1,4 @@
-import { DesignExportFormats, SubmissionPageType, SubmissionType } from "src/lib";
+import { AttachmentTypes, DesignExportFormats, SubmissionPageType, SubmissionType } from "src/lib";
 import { OrderEntity } from "./entity.order";
 import { OrderEditEntity } from "./entity.order_edits";
 import { MessageEntity } from "./entity.messages";
@@ -12,8 +12,8 @@ export declare class OrderSubmissionEntity {
     file_url: string;
     file_name: string;
     file_size: number;
-    file_type: number;
-    file_extension: number;
+    file_type: AttachmentTypes;
+    file_extension: string;
     created_at: Date;
     updated_at: Date;
     order: OrderEntity;

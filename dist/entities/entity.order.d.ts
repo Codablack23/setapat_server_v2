@@ -3,6 +3,7 @@ import { DesignClass, DesignPackage, OrderStatus, OrderType } from "src/lib";
 import { OrderResizeExtraEntity } from "./entity.order_resize";
 import { OrderBriefAttachmentEntity } from "./entity.order_brief";
 import { OrderPageEntity } from "./entity.order_pages";
+import { OrderSubmissionEntity } from "./entity.order_submissions";
 import { UserEntity } from "./entity.user";
 import { NotificationEntity } from "./entity.notification";
 import { OrderAssignmentEntity } from "./entity.order_assignments";
@@ -36,7 +37,7 @@ export declare class OrderEntity {
     order_assignments: OrderAssignmentEntity[];
     brief_attachments: OrderBriefAttachmentEntity[];
     pages: OrderPageEntity[];
-    submissions: OrderPageEntity[];
+    submissions: OrderSubmissionEntity[];
     conversations: ConversationEntity[];
     reviews: OrderReviewEntity[];
     receipts: OrderReceiptEntity[];

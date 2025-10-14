@@ -11,7 +11,6 @@ var __metadata = (this && this.__metadata) || function (k, v) {
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.OrderPageEntity = void 0;
 const lib_1 = require("../lib");
-const schema_1 = require("../lib/schema");
 const typeorm_1 = require("typeorm");
 const entity_order_1 = require("./entity.order");
 const entity_order_resize_1 = require("./entity.order_resize");
@@ -64,16 +63,24 @@ __decorate([
     __metadata("design:type", String)
 ], OrderPageEntity.prototype, "orientation", void 0);
 __decorate([
-    (0, typeorm_1.Column)({ name: 'page_number', type: 'bigint', nullable: false }),
+    (0, typeorm_1.Column)({ name: 'page_number', type: 'int', nullable: false }),
     __metadata("design:type", Number)
 ], OrderPageEntity.prototype, "page_number", void 0);
 __decorate([
     (0, typeorm_1.Column)({
         type: 'bigint',
-        default: schema_1.designPlans.BASIC.price.A * 100,
         transformer: {
-            to: (value) => Math.round(value * 100),
-            from: (value) => Number(value) / 100,
+            to: (value) => {
+                if (value == null)
+                    return 0;
+                const num = Number(value);
+                return Math.round(num * 100);
+            },
+            from: (value) => {
+                if (!value)
+                    return 0;
+                return Number(value) / 100;
+            },
         },
     }),
     __metadata("design:type", Number)
@@ -82,7 +89,12 @@ __decorate([
     (0, typeorm_1.Column)({
         type: 'bigint',
         transformer: {
-            to: (value) => Math.round(value * 100),
+            to: (value) => {
+                if (value == null)
+                    return '0';
+                const num = Number(value);
+                return String(Math.round(num * 100));
+            },
             from: (value) => Number(value) / 100,
         },
         nullable: false,

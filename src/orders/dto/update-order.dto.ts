@@ -245,11 +245,11 @@ export class OrderSubmissionDto {
 
   @ApiProperty({ enum: AttachmentTypes, description: 'Attachment type' })
   @IsEnum(AttachmentTypes)
-  file_type: number;
+  file_type: AttachmentTypes;
 
   @ApiProperty({ example: 'png', description: 'File extension' })
   @IsString()
-  file_extension: number;
+  file_extension: string;
 }
 
 // DTO containing multiple submissions
