@@ -52,7 +52,7 @@ import { SendMailClient } from 'zeptomail';
 //         return mailInfo.messageId
 //     }
 //}
-export class MailProvider {
+export class MailerProvider {
     private static url = "api.zeptomail.com/";
     private static token = ENVIRONMENT.MAILER.PASSWORD
     private static zeptoClient = new SendMailClient({
