@@ -5,7 +5,6 @@ import {
   IsNotEmpty,
   IsOptional,
   IsPhoneNumber,
-  IsStrongPassword,
   Length,
 } from "class-validator";
 import { ApiProperty, ApiPropertyOptional } from "@nestjs/swagger";
@@ -48,22 +47,9 @@ export class RegisterUserDto {
     example: "StrongP@ssw0rd",
   })
   @IsNotEmpty({ message: "Please provide your password" })
-  @Length(8, undefined, {
-    message: "Please provide a password with at least 8 characters",
+  @Length(6, undefined, {
+    message: "Please provide a password with at least 6 characters",
   })
-  @IsStrongPassword(
-    {
-      minLength: 8,
-      minLowercase: 1,
-      minUppercase: 1,
-      minNumbers: 1,
-      minSymbols: 1,
-    },
-    {
-      message:
-        "Password must contain at least 8 characters, including uppercase, lowercase, number, and special character",
-    }
-  )
   password: string;
 
   @ApiPropertyOptional({
@@ -92,8 +78,8 @@ export class LoginUserDto {
     example: "StrongP@ssw0rd",
   })
   @IsNotEmpty({ message: "Please provide your password" })
-  @Length(8, undefined, {
-    message: "Please provide a password with at least 8 characters",
+  @Length(6, undefined, {
+    message: "Please provide a password with at least 6 characters",
   })
   password: string;
 }
