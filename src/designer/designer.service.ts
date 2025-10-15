@@ -1,3 +1,4 @@
+import { DesignExportFormats } from './../lib/enum/enum.order';
 import {
   DesignPackage,
   designPlans,
@@ -180,26 +181,44 @@ export class DesignerService {
         const pageKey = page.page_number.toString();
 
         const currentPageSubs = pageSubmissions.filter(
-          (sub) => sub.page === page.page_number,
+          (sub) => sub.page == page.page_number,
         );
 
+        const pageCounts: Partial<Record<DesignExportFormats, number>> = {};
+
+        for (const item of currentPageSubs) {
+          const format = item.export_format;
+          // first submission starts at 0, next ones increment
+          pageCounts[format] = (pageCounts[format] ?? -1) + 1;
+        }
+        const highestCount = Math.max(...Object.values(pageCounts), 0);
         const resize: RevisionObject = {};
         for (const resizeItem of page.page_resizes) {
           const currentResizeSubs = resizeSubmissions.filter(
             (sub) =>
-              sub.page === page.page_number &&
-              sub.resize_page === resizeItem.page,
+              sub.page == page.page_number &&
+              sub.resize_page == resizeItem.page,
           );
+
+          const resizePageCounts: Partial<Record<DesignExportFormats, number>> =
+            {};
+
+          for (const item of currentResizeSubs) {
+            const format = item.export_format;
+            // first submission starts at 0, next ones increment
+            resizePageCounts[format] = (pageCounts[format] ?? -1) + 1;
+          }
+          const highestResizeCount = Math.max(...Object.values(pageCounts), 0);
 
           resize[resizeItem.page] = {
             total: orderRevision,
-            count: Math.max(0, currentResizeSubs.length - 1),
+            count: highestResizeCount,
           };
         }
 
         revisionsPerPage[pageKey] = {
           total: orderRevision,
-          count: Math.max(0, currentPageSubs.length - 1),
+          count: highestCount,
           resize,
         };
       }

@@ -166,31 +166,23 @@ let OrdersService = class OrdersService {
         if (order.status === lib_1.OrderStatus.COMPLETED) {
             throw new common_1.ForbiddenException(lib_1.AppResponse.getFailedResponse('Sorry this order has already been completed'));
         }
-        const orderSubmissions = await this.orderSubmissionRepo.find({
-            where: { type: lib_1.SubmissionType.ORDER, order: { id } },
-        });
+        const revisionsPerPage = await this.getPageRevisionsCount(order.id);
         const orderDesignPackage = config_1.DESIGN_PLANS[order.design_package];
         const maxRevisionsPerPage = orderDesignPackage.revison + 1;
-        const pageCounts = {};
-        const resizeCounts = {};
-        for (const sub of orderSubmissions) {
-            if (sub.page)
-                pageCounts[sub.page] = (pageCounts[sub.page] || 0) + 1;
-            if (sub.resize_page)
-                resizeCounts[sub.resize_page] =
-                    (resizeCounts[sub.resize_page] || 0) + 1;
-        }
         dto.submissions.forEach((submission) => {
             if (submission.page_type === lib_1.SubmissionPageType.PAGE) {
-                const count = pageCounts[submission.page] || 0;
-                console.log({ resizeCounts, count });
+                const { count } = revisionsPerPage[submission.page.toString()];
                 if (count >= maxRevisionsPerPage) {
                     throw new common_1.ForbiddenException(lib_1.AppResponse.getFailedResponse(`Sorry, you have exhausted number of revisions for page (${submission.page})`));
                 }
             }
             if (submission.page_type === lib_1.SubmissionPageType.RESIZE) {
                 const resizeKey = submission.resize_page ?? 1;
-                const count = resizeCounts[resizeKey] || 0;
+                const pageRevisions = revisionsPerPage[submission.page];
+                const count = submission.resize_page
+                    ? (pageRevisions.resize?.[submission.resize_page?.toString()].count ??
+                        0)
+                    : 0;
                 if (count >= maxRevisionsPerPage) {
                     this.sendRevisionCountNotification(order.user, order).catch((err) => {
                         console.log('Failed to send revision count notification');
@@ -199,11 +191,19 @@ let OrdersService = class OrdersService {
                 }
             }
         });
-        const newSubmissions = dto.submissions.map((submission) => this.orderSubmissionRepo.create({
-            ...submission,
-            order,
-            type: lib_1.SubmissionType.ORDER,
-        }));
+        const newSubmissions = dto.submissions.map((submission) => {
+            const revisions = submission.page_type !== lib_1.SubmissionPageType.PAGE
+                ? revisionsPerPage[submission.page].count
+                : submission.resize_page
+                    ? revisionsPerPage[submission.page]?.resize?.[submission.resize_page]?.count
+                    : 0;
+            return this.orderSubmissionRepo.create({
+                ...submission,
+                order,
+                revisions,
+                type: lib_1.SubmissionType.ORDER,
+            });
+        });
         const conversation = order.conversations[0];
         const submissions = await this.orderSubmissionRepo.save(newSubmissions);
         const newMessage = this.messageRepo.create({
@@ -792,8 +792,7 @@ let OrdersService = class OrdersService {
                     pages: { page_resizes: true },
                     brief_attachments: true,
                     submissions: true,
-                    conversations: true,
-                    order_edits: { pages: true },
+                    order_edits: { pages: {} },
                     resize_extras: { order_page: true },
                 },
                 order: { created_at: 'DESC' },
@@ -804,6 +803,7 @@ let OrdersService = class OrdersService {
             const orderRevision = lib_1.designPlans[order.design_package ?? lib_1.DesignPackage.BASIC].revison;
             const pageSubmissions = (order.submissions ?? []).filter((sub) => sub.page_type === lib_1.SubmissionPageType.PAGE);
             const resizeSubmissions = (order.submissions ?? []).filter((sub) => sub.page_type === lib_1.SubmissionPageType.RESIZE);
+            console.log({ resizeSubmissions, pageSubmissions });
             for (const page of order.pages) {
                 const pageKey = page.page_number.toString();
                 const currentPageSubs = pageSubmissions.filter((sub) => sub.page === page.page_number);

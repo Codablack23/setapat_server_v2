@@ -261,44 +261,32 @@ export class OrdersService {
       );
     }
 
-    // Fetch existing submissions
-    const orderSubmissions = await this.orderSubmissionRepo.find({
-      where: { type: SubmissionType.ORDER, order: { id } },
-    });
+    const revisionsPerPage = await this.getPageRevisionsCount(order.id);
 
     const orderDesignPackage = DESIGN_PLANS[order.design_package];
     const maxRevisionsPerPage = orderDesignPackage.revison + 1; // 1 first submission + revisions
 
-    // Count existing submissions by page and resize_page
-    const pageCounts: Record<string, number> = {};
-    const resizeCounts: Record<string, number> = {};
-
-    for (const sub of orderSubmissions) {
-      if (sub.page) pageCounts[sub.page] = (pageCounts[sub.page] || 0) + 1;
-      if (sub.resize_page)
-        resizeCounts[sub.resize_page] =
-          (resizeCounts[sub.resize_page] || 0) + 1;
-    }
-
     // Validate new submissions and increment counts for multiple submissions in same request
     dto.submissions.forEach((submission) => {
       if (submission.page_type === SubmissionPageType.PAGE) {
-        const count = pageCounts[submission.page] || 0;
-
-        console.log({ resizeCounts, count });
-
+        const { count } = revisionsPerPage[submission.page.toString()];
         if (count >= maxRevisionsPerPage) {
           throw new ForbiddenException(
             AppResponse.getFailedResponse(
               `Sorry, you have exhausted number of revisions for page (${submission.page})`,
             ),
           );
-        }
+        } // increment count
       }
 
       if (submission.page_type === SubmissionPageType.RESIZE) {
         const resizeKey = submission.resize_page ?? 1;
-        const count = resizeCounts[resizeKey] || 0;
+        const pageRevisions = revisionsPerPage[submission.page];
+        const count = submission.resize_page
+          ? (pageRevisions.resize?.[submission.resize_page?.toString()].count ??
+            0)
+          : 0;
+
         if (count >= maxRevisionsPerPage) {
           this.sendRevisionCountNotification(order.user, order).catch((err) => {
             console.log('Failed to send revision count notification');
@@ -313,13 +301,23 @@ export class OrdersService {
     });
 
     // Save new submissions
-    const newSubmissions = dto.submissions.map((submission) =>
-      this.orderSubmissionRepo.create({
+    const newSubmissions = dto.submissions.map((submission) => {
+      const revisions =
+        submission.page_type !== SubmissionPageType.PAGE
+          ? revisionsPerPage[submission.page].count
+          : submission.resize_page
+            ? revisionsPerPage[submission.page]?.resize?.[
+                submission.resize_page
+              ]?.count
+            : 0;
+
+      return this.orderSubmissionRepo.create({
         ...submission,
         order,
+        revisions,
         type: SubmissionType.ORDER,
-      }),
-    );
+      });
+    });
 
     const conversation = order.conversations[0];
 
@@ -1167,8 +1165,7 @@ export class OrdersService {
           pages: { page_resizes: true },
           brief_attachments: true,
           submissions: true,
-          conversations: true,
-          order_edits: { pages: true },
+          order_edits: { pages: {} },
           resize_extras: { order_page: true },
         },
         order: { created_at: 'DESC' },
@@ -1187,6 +1184,8 @@ export class OrdersService {
       const resizeSubmissions = (order.submissions ?? []).filter(
         (sub) => sub.page_type === SubmissionPageType.RESIZE,
       );
+
+      console.log({ resizeSubmissions, pageSubmissions });
 
       for (const page of order.pages) {
         const pageKey = page.page_number.toString();

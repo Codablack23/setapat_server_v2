@@ -15,6 +15,7 @@ export declare class OrderEntity {
     id: string;
     design_class: DesignClass;
     order_id: string;
+    total_revisions: string;
     design_brief: string;
     design_package: DesignPackage;
     type: OrderType;

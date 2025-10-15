@@ -35,7 +35,10 @@ export class OrderEntity {
     design_class: DesignClass
 
     @Column("longtext", { unique: true })
-    order_id: string
+    order_id: string 
+    
+    @Column("int", { default:2 })
+    total_revisions: string
 
     @Column("longtext")
     design_brief: string

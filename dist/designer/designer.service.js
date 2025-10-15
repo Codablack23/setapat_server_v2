@@ -158,19 +158,31 @@ let DesignerService = class DesignerService {
             const resizeSubmissions = (order.submissions ?? []).filter((sub) => sub.page_type === lib_1.SubmissionPageType.RESIZE);
             for (const page of order.pages) {
                 const pageKey = page.page_number.toString();
-                const currentPageSubs = pageSubmissions.filter((sub) => sub.page === page.page_number);
+                const currentPageSubs = pageSubmissions.filter((sub) => sub.page == page.page_number);
+                const pageCounts = {};
+                for (const item of currentPageSubs) {
+                    const format = item.export_format;
+                    pageCounts[format] = (pageCounts[format] ?? -1) + 1;
+                }
+                const highestCount = Math.max(...Object.values(pageCounts), 0);
                 const resize = {};
                 for (const resizeItem of page.page_resizes) {
-                    const currentResizeSubs = resizeSubmissions.filter((sub) => sub.page === page.page_number &&
-                        sub.resize_page === resizeItem.page);
+                    const currentResizeSubs = resizeSubmissions.filter((sub) => sub.page == page.page_number &&
+                        sub.resize_page == resizeItem.page);
+                    const resizePageCounts = {};
+                    for (const item of currentResizeSubs) {
+                        const format = item.export_format;
+                        resizePageCounts[format] = (pageCounts[format] ?? -1) + 1;
+                    }
+                    const highestResizeCount = Math.max(...Object.values(pageCounts), 0);
                     resize[resizeItem.page] = {
                         total: orderRevision,
-                        count: Math.max(0, currentResizeSubs.length - 1),
+                        count: highestResizeCount,
                     };
                 }
                 revisionsPerPage[pageKey] = {
                     total: orderRevision,
-                    count: Math.max(0, currentPageSubs.length - 1),
+                    count: highestCount,
                     resize,
                 };
             }

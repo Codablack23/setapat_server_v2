@@ -1,6 +1,6 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.SubmissionPageType = exports.SubmissionType = exports.OrderEditStatus = exports.OrderAssignmentStatus = exports.Orientation = exports.DesignExportFormats = exports.DesignClass = exports.OrderType = exports.DesignPackage = exports.AttachmentTypes = exports.DesignUnits = exports.OrderStatus = void 0;
+exports.SubmissionPageType = exports.SubmissionType = exports.OrderEditStatus = exports.OrderAssignmentStatus = exports.Orientation = exports.designExportFormats = exports.DesignExportFormats = exports.DesignClass = exports.OrderType = exports.DesignPackage = exports.AttachmentTypes = exports.DesignUnits = exports.OrderStatus = void 0;
 var OrderStatus;
 (function (OrderStatus) {
     OrderStatus["DRAFT"] = "DRAFT";
@@ -51,6 +51,7 @@ var DesignExportFormats;
     DesignExportFormats["SVG"] = "SVG";
     DesignExportFormats["AI"] = "AI";
 })(DesignExportFormats || (exports.DesignExportFormats = DesignExportFormats = {}));
+exports.designExportFormats = Object.values(DesignExportFormats);
 var Orientation;
 (function (Orientation) {
     Orientation["PORTRAIT"] = "PORTRAIT";

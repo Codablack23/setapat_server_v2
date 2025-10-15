@@ -41,6 +41,7 @@ export declare enum DesignExportFormats {
     SVG = "SVG",
     AI = "AI"
 }
+export declare const designExportFormats: DesignExportFormats[];
 export declare enum Orientation {
     PORTRAIT = "PORTRAIT",
     LANDSCAPE = "LANDSCAPE"

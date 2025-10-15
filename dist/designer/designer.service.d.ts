@@ -24,6 +24,7 @@ export declare class DesignerService {
                 id: string;
                 design_class: import("src/lib").DesignClass;
                 order_id: string;
+                total_revisions: string;
                 design_brief: string;
                 design_package: DesignPackage;
                 type: import("src/lib").OrderType;

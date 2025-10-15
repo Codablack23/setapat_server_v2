@@ -35,6 +35,9 @@ export class OrderSubmissionEntity {
 
     @Column("bigint", { nullable: true })
     resize_page?: number
+    
+    @Column("int", { default:0 })
+    revisions: number
 
     @Column({ type: "enum", enum: DesignExportFormats })
     export_format: DesignExportFormats

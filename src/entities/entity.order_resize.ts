@@ -26,7 +26,7 @@ export class OrderResizeExtraEntity {
   page: number;
 
   @Column('bigint', {
-   transformer: {
+    transformer: {
       to: (value?: number | string) => {
         if (value == null) return 0;
         const num = Number(value);

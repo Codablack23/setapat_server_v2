@@ -30,6 +30,7 @@ let OrderEntity = class OrderEntity {
     id;
     design_class;
     order_id;
+    total_revisions;
     design_brief;
     design_package;
     type;
@@ -80,6 +81,10 @@ __decorate([
     (0, typeorm_1.Column)("longtext", { unique: true }),
     __metadata("design:type", String)
 ], OrderEntity.prototype, "order_id", void 0);
+__decorate([
+    (0, typeorm_1.Column)("int", { default: 2 }),
+    __metadata("design:type", String)
+], OrderEntity.prototype, "total_revisions", void 0);
 __decorate([
     (0, typeorm_1.Column)("longtext"),
     __metadata("design:type", String)

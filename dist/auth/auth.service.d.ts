@@ -7,7 +7,7 @@ export declare class AuthService {
     private readonly userRepository;
     constructor(jwtService: JwtService, userRepository: Repository<UserEntity>);
     registerUser(registerUserDto: RegisterUserDto): Promise<{
-        status: "success" | "failed";
+        status: "failed" | "success";
         message: string;
         data: {
             token: string;
@@ -17,7 +17,7 @@ export declare class AuthService {
     private removePasswordFromUserObject;
     verifyUser(email: string, password: string): Promise<{}>;
     loginUser(user: any): Promise<{
-        status: "success" | "failed";
+        status: "failed" | "success";
         message: string;
         data: {
             token: string;
@@ -25,7 +25,7 @@ export declare class AuthService {
         } | undefined;
     }>;
     loginWithGoogle(accessToken: string): Promise<{
-        status: "success" | "failed";
+        status: "failed" | "success";
         message: string;
         data: {
             token: string;

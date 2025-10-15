@@ -31,6 +31,7 @@ export declare class OrdersController {
                 id: string;
                 design_class: import("src/lib").DesignClass;
                 order_id: string;
+                total_revisions: string;
                 design_brief: string;
                 design_package: import("src/lib").DesignPackage;
                 type: import("src/lib").OrderType;

@@ -46,6 +46,8 @@ export enum DesignExportFormats {
   AI = 'AI',
 }
 
+export const designExportFormats = Object.values(DesignExportFormats);
+
 export enum Orientation {
   PORTRAIT = 'PORTRAIT',
   LANDSCAPE = 'LANDSCAPE',
