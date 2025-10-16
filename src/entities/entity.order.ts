@@ -34,7 +34,7 @@ export class OrderEntity {
     @Column({ type: "enum", enum: DesignClass, default: DesignClass.A })
     design_class: DesignClass
 
-    @Column("longtext", { unique: true })
+    @Column("longtext")
     order_id: string 
     
     @Column("int", { default:2 })
