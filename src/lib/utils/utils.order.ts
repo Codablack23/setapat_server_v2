@@ -45,7 +45,7 @@ export class OrdersUtil {
     designPackage: DesignPackage,
     orderType = OrderType.ONE_OFF,
     excludeDraft = false,
-  ) {
+  ): Promise<string> {
     const condition = excludeDraft ? { status: Not(OrderStatus.DRAFT) } : {};
     const { orderCount, day, month, year } =
       await this.getOrderIdDetails(condition);
@@ -54,6 +54,17 @@ export class OrdersUtil {
     const orderSlug = this.orderTypeSlug[orderType];
     const orderNumber = this.addDigitPrefix(orderCount + 1);
 
-    return `SA${orderSlug}${packageSlug}${!excludeDraft ? 'DR' : ''}${day}${month}${year}${orderNumber}`;
+    const newOrderNumber = `SA${orderSlug}${packageSlug}${!excludeDraft ? 'DR' : ''}${day}${month}${year}${orderNumber}`;
+
+    const existingOrder = await this.orderRepository.findOne({
+      where: { order_id: newOrderNumber },
+    });
+
+    // 🧠 If order already exists, increment and retry once
+    if (existingOrder) {
+      return this.generateOrderNumber(designPackage, orderType, excludeDraft);
+    }
+
+    return newOrderNumber;
   }
 }
