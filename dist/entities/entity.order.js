@@ -26,6 +26,7 @@ const entity_order_edits_1 = require("./entity.order_edits");
 const entity_conversations_1 = require("./entity.conversations");
 const luxon_1 = require("luxon");
 const entity_used_discount_1 = require("./entity.used_discount");
+const entity_revisions_1 = require("./entity.revisions");
 let OrderEntity = class OrderEntity {
     id;
     design_class;
@@ -58,6 +59,7 @@ let OrderEntity = class OrderEntity {
     reviews;
     receipts;
     notifications;
+    revisions;
     user;
     discount;
     created_at;
@@ -78,7 +80,7 @@ __decorate([
     __metadata("design:type", String)
 ], OrderEntity.prototype, "design_class", void 0);
 __decorate([
-    (0, typeorm_1.Column)("longtext", { unique: true }),
+    (0, typeorm_1.Column)("longtext"),
     __metadata("design:type", String)
 ], OrderEntity.prototype, "order_id", void 0);
 __decorate([
@@ -199,6 +201,10 @@ __decorate([
     (0, typeorm_1.OneToMany)(() => entity_notification_1.NotificationEntity, (notification) => notification.order, { cascade: true }),
     __metadata("design:type", Array)
 ], OrderEntity.prototype, "notifications", void 0);
+__decorate([
+    (0, typeorm_1.OneToMany)(() => entity_revisions_1.SubmissionRevisions, (revisions) => revisions.order, { cascade: true }),
+    __metadata("design:type", Array)
+], OrderEntity.prototype, "revisions", void 0);
 __decorate([
     (0, typeorm_1.ManyToOne)(() => entity_user_1.UserEntity, (user) => user.orders),
     (0, typeorm_1.JoinColumn)(),

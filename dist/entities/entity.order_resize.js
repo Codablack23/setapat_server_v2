@@ -27,6 +27,11 @@ let OrderResizeExtraEntity = class OrderResizeExtraEntity {
     order;
     edit_page;
     order_page;
+    applyPriceTransform() {
+        if (this.price != null) {
+            this.price = Math.round(Number(this.price) * 100);
+        }
+    }
 };
 exports.OrderResizeExtraEntity = OrderResizeExtraEntity;
 __decorate([
@@ -46,13 +51,14 @@ __decorate([
     __metadata("design:type", Number)
 ], OrderResizeExtraEntity.prototype, "page", void 0);
 __decorate([
-    (0, typeorm_1.Column)('bigint', {
+    (0, typeorm_1.Column)('int', {
         transformer: {
             to: (value) => {
                 if (value == null)
                     return 0;
                 const num = Number(value);
-                return Math.round(num * 100);
+                console.log({ num, value });
+                return Math.round(num);
             },
             from: (value) => {
                 if (!value)
@@ -93,6 +99,13 @@ __decorate([
     (0, typeorm_1.JoinColumn)(),
     __metadata("design:type", entity_order_pages_1.OrderPageEntity)
 ], OrderResizeExtraEntity.prototype, "order_page", void 0);
+__decorate([
+    (0, typeorm_1.BeforeInsert)(),
+    (0, typeorm_1.BeforeUpdate)(),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", []),
+    __metadata("design:returntype", void 0)
+], OrderResizeExtraEntity.prototype, "applyPriceTransform", null);
 exports.OrderResizeExtraEntity = OrderResizeExtraEntity = __decorate([
     (0, typeorm_1.Entity)({ name: 'order_resize_extras' })
 ], OrderResizeExtraEntity);

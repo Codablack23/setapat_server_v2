@@ -25,6 +25,7 @@ import { OrderEditEntity } from './entity.order_edits';
 import { ConversationEntity } from './entity.conversations';
 import { DateTime } from 'luxon';
 import { UsedDiscountEntity } from './entity.used_discount';
+import { SubmissionRevisions } from './entity.revisions';
 
 @Entity({ name: "orders" })
 export class OrderEntity {
@@ -126,6 +127,9 @@ export class OrderEntity {
 
     @OneToMany(() => NotificationEntity, (notification) => notification.order,{cascade:true})
     notifications: NotificationEntity[]
+    
+    @OneToMany(() => SubmissionRevisions, (revisions) => revisions.order,{cascade:true})
+    revisions: SubmissionRevisions[]
 
     @ManyToOne(() => UserEntity, (user) => user.orders)
     @JoinColumn()

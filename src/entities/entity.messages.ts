@@ -14,6 +14,7 @@ import { ConversationEntity } from './entity.conversations';
 import { MessageAttachmentEntity } from './entity.message_attachment';
 import { OrderSubmissionEntity } from './entity.order_submissions';
 import { MessageType } from 'src/lib';
+import { MessageRevisionEntity } from './entity.message_revisions';
 
 @Entity({ name: 'messages' })
 export class MessageEntity {
@@ -49,6 +50,9 @@ export class MessageEntity {
     nullable: true,
   })
   order_submissions?: OrderSubmissionEntity[];
+
+  @OneToMany(() => MessageRevisionEntity, (revision) => revision.message)
+  revisions?: MessageRevisionEntity[];
 
   @CreateDateColumn()
   created_at: Date;

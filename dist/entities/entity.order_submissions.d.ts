@@ -7,7 +7,6 @@ export declare class OrderSubmissionEntity {
     type: SubmissionType;
     page_type: SubmissionPageType;
     resize_page?: number;
-    revisions: number;
     export_format: DesignExportFormats;
     page: number;
     file_url: string;

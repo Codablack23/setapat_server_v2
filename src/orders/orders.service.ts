@@ -1,5 +1,6 @@
-import { MessageEntity } from './../entities/entity.messages';
-import { ConversationEntity } from './../entities/entity.conversations';
+import { MessageEntity } from 'src/entities/entity.messages';
+import { MessageRevisionEntity } from 'src/entities/entity.message_revisions';
+import { ConversationEntity } from 'src/entities/entity.conversations';
 import {
   AddDesignBriefDto,
   AddOrderSubmissionsDto,
@@ -11,7 +12,9 @@ import {
   BadRequestException,
   ConflictException,
   ForbiddenException,
+  HttpException,
   Injectable,
+  InternalServerErrorException,
   NotFoundException,
   UnauthorizedException,
 } from '@nestjs/common';
@@ -19,15 +22,16 @@ import { CreateOrderDto } from './dto/create-order.dto';
 import { UpdateOrderDto } from './dto/update-order.dto';
 import {
   AppResponse,
-  ConversationStatus,
   ConversationType,
   DesignerRole,
+  designExportFormats,
   DesignPackage,
   designPlans,
   MessageType,
   OrderAssignmentStatus,
   OrderEditStatus,
   OrderStatus,
+  OrderSubmissions,
   OrdersUtil,
   ParticipantStatus,
   RevisionObject,
@@ -38,7 +42,7 @@ import {
   UserType,
 } from 'src/lib';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
+import { DataSource, Repository } from 'typeorm';
 import {
   OrderPageEntity,
   OrderEntity,
@@ -60,6 +64,7 @@ import { CreateOrderEditDto } from './dto/create-edit.dto';
 import { OrderEditEntity } from 'src/entities/entity.order_edits';
 import { OrderEditPageEntity } from 'src/entities/entity.edit_page';
 import { ConversationParticipantEntity } from 'src/entities/entity.participants';
+import { SubmissionRevisions } from 'src/entities/entity.revisions';
 
 @Injectable()
 export class OrdersService {
@@ -67,6 +72,8 @@ export class OrdersService {
     private readonly orderUtil: OrdersUtil,
     @InjectRepository(OrderEntity)
     private readonly orderRepository: Repository<OrderEntity>,
+
+    private readonly dataSource: DataSource,
 
     @InjectRepository(OrderPageEntity)
     private readonly orderPageRepository: Repository<OrderPageEntity>,
@@ -106,6 +113,9 @@ export class OrdersService {
 
     @InjectRepository(MessageEntity)
     private readonly messageRepo: Repository<MessageEntity>,
+
+    @InjectRepository(SubmissionRevisions)
+    private readonly submissionRevisionRepo: Repository<SubmissionRevisions>,
 
     @InjectRepository(ConversationParticipantEntity)
     private readonly participantsRepo: Repository<ConversationParticipantEntity>,
@@ -231,7 +241,7 @@ export class OrdersService {
   }
 
   async submit(userId: string, id: string, dto: AddOrderSubmissionsDto) {
-    // Fetch the order assigned to this designer
+    // 1️⃣ Fetch order and ensure designer has access
     const order = await this.orderRepository.findOne({
       where: {
         id,
@@ -256,106 +266,248 @@ export class OrdersService {
     if (order.status === OrderStatus.COMPLETED) {
       throw new ForbiddenException(
         AppResponse.getFailedResponse(
-          'Sorry this order has already been completed',
+          'Sorry, this order has already been completed',
         ),
       );
     }
 
-    const revisionsPerPage = await this.getPageRevisionsCount(order.id);
-
-    const orderDesignPackage = DESIGN_PLANS[order.design_package];
-    const maxRevisionsPerPage = orderDesignPackage.revison + 1; // 1 first submission + revisions
-
-    // Validate new submissions and increment counts for multiple submissions in same request
-    dto.submissions.forEach((submission) => {
-      if (submission.page_type === SubmissionPageType.PAGE) {
-        const { count } = revisionsPerPage[submission.page.toString()];
-        if (count >= maxRevisionsPerPage) {
-          throw new ForbiddenException(
-            AppResponse.getFailedResponse(
-              `Sorry, you have exhausted number of revisions for page (${submission.page})`,
-            ),
-          );
-        } // increment count
-      }
-
-      if (submission.page_type === SubmissionPageType.RESIZE) {
-        const resizeKey = submission.resize_page ?? 1;
-        const pageRevisions = revisionsPerPage[submission.page];
-        const count = submission.resize_page
-          ? (pageRevisions.resize?.[submission.resize_page?.toString()].count ??
-            0)
-          : 0;
-
-        if (count >= maxRevisionsPerPage) {
-          this.sendRevisionCountNotification(order.user, order).catch((err) => {
-            console.log('Failed to send revision count notification');
-          });
-          throw new ForbiddenException(
-            AppResponse.getFailedResponse(
-              `Sorry, you have exhausted number of revisions for resize page (${resizeKey})`,
-            ),
-          );
-        }
-      }
-    });
-
-    // Save new submissions
-    const newSubmissions = dto.submissions.map((submission) => {
-      const revisions =
-        submission.page_type !== SubmissionPageType.PAGE
-          ? revisionsPerPage[submission.page].count
-          : submission.resize_page
-            ? revisionsPerPage[submission.page]?.resize?.[
-                submission.resize_page
-              ]?.count
-            : 0;
-
-      return this.orderSubmissionRepo.create({
-        ...submission,
-        order,
-        revisions,
-        type: SubmissionType.ORDER,
-      });
-    });
+    if (!order.conversations?.length) {
+      throw new NotFoundException(
+        AppResponse.getFailedResponse('No conversation found for this order'),
+      );
+    }
 
     const conversation = order.conversations[0];
+    const designPlan = DESIGN_PLANS[order.design_package];
+    const maxRevisionsPerPage = designPlan.revison + 1; // 1 submission + allowed revisions
 
-    const submissions = await this.orderSubmissionRepo.save(newSubmissions);
-    const newMessage = this.messageRepo.create({
-      content: '',
-      sender: {
-        id: userId,
-      },
-      type: MessageType.SUBMISSION,
-      order_submissions: submissions,
-      conversation: conversation,
+    // 2️⃣ Fetch existing revisions (filtered by order for efficiency)
+    const existingRevisions = await this.submissionRevisionRepo.find({
+      where: { order: { id } },
     });
 
-    await this.messageRepo.save(newMessage);
+    // 3️⃣ Validate incoming submissions
+    dto.submissions.forEach((submission) =>
+      this.validateRevisionLimit(
+        submission,
+        existingRevisions,
+        maxRevisionsPerPage,
+        order.user,
+        order,
+      ),
+    );
 
-    // Send submission notification asynchronously (non-blocking)
-    this.sendSubmissionNotification(order.user, order).catch((err) => {
-      console.error(
-        `Failed to send submission notification for order ${order.order_id}:`,
-        err,
+    // 4️⃣ Save submissions, messages, and revisions in a single transaction
+    await this.dataSource.transaction(async (manager) => {
+      const submissionRepo = manager.getRepository(OrderSubmissionEntity);
+      const messageRepo = manager.getRepository(MessageEntity);
+      const revisionRepo = manager.getRepository(SubmissionRevisions);
+      const messageRevisionRepo = manager.getRepository(MessageRevisionEntity);
+
+      const submissions = submissionRepo.create(
+        dto.submissions.map((s) => ({
+          ...s,
+          order,
+          type: SubmissionType.ORDER,
+        })),
       );
+
+      const savedSubmissions = await submissionRepo.save(submissions);
+
+      // Create messages
+      const message = this.createSubmissionMessages(
+        savedSubmissions,
+        existingRevisions,
+        userId,
+        conversation,
+      );
+      const newMessage = await messageRepo.save(message);
+
+      // Create revision records
+      const newRevisions = this.createSubmissionRevisions(savedSubmissions);
+      await revisionRepo.save(newRevisions);
+
+      const messageRevisions = this.createMessageRevisions(
+        newMessage,
+        existingRevisions,
+        savedSubmissions,
+      );
+
+      await messageRevisionRepo.save(messageRevisions);
     });
+
+    // 5️⃣ Notify user asynchronously
+    this.sendSubmissionNotification(order.user, order).catch((err) =>
+      console.error(
+        `Failed to send submission notification for order ${order.order_id}`,
+        (err as Error).stack,
+      ),
+    );
 
     return AppResponse.getSuccessResponse({
       message: 'Submissions added successfully',
-      data: { submission_count: newSubmissions.length },
+      data: { submission_count: dto.submissions.length },
     });
+  }
+
+  /**
+   * Validate if submission exceeds allowed revision count
+   */
+  private validateRevisionLimit(
+    submission: AddOrderSubmissionsDto['submissions'][0],
+    revisions: SubmissionRevisions[],
+    maxRevisionsPerPage: number,
+    user: UserEntity,
+    order: OrderEntity,
+  ) {
+    const isResize = submission.page_type == SubmissionPageType.RESIZE;
+
+    const pageRevisions = revisions.filter(
+      (item) =>
+        item.page_type == SubmissionPageType.PAGE &&
+        item.page == submission.page,
+    );
+    const resizeRevisions = revisions.filter(
+      (item) =>
+        item.page_type == SubmissionPageType.RESIZE &&
+        item.page == submission.page &&
+        item.resize_page == submission.resize_page,
+    );
+
+    const count = isResize ? resizeRevisions.length : pageRevisions.length;
+
+    console.log({ count });
+
+    if (count >= maxRevisionsPerPage) {
+      // Optionally send notification before blocking
+      this.sendRevisionCountNotification(user, order).catch(() => {
+        console.warn(`Revision limit notification failed for user ${user.id}`);
+      });
+
+      throw new ForbiddenException(
+        AppResponse.getFailedResponse(
+          `Sorry, you have exhausted number of revisions for ${
+            isResize
+              ? `resize page (${submission.resize_page})`
+              : `page (${submission.page})`
+          }`,
+        ),
+      );
+    }
+  }
+
+  /**
+   * Generate message entities for each submission
+   */
+  private createSubmissionMessages(
+    submissions: OrderSubmissionEntity[],
+    revisions: SubmissionRevisions[],
+    userId: string,
+    conversation: ConversationEntity,
+  ): MessageEntity {
+    return this.messageRepo.create({
+      content: '',
+      sender: { id: userId },
+      type: MessageType.SUBMISSION,
+      // revisions: revisionCount - 1,
+      order_submissions: submissions,
+      conversation,
+    });
+  }
+
+  private createMessageRevisions(
+    message: MessageEntity,
+    revisions: SubmissionRevisions[],
+    submissions: OrderSubmissionEntity[],
+  ) {
+    const messageRevisionsRepo = this.dataSource.getRepository(
+      MessageRevisionEntity,
+    );
+    const pageRevisions = revisions.filter(
+      (r) => r.page_type == SubmissionPageType.PAGE,
+    );
+    const resizeRevisions = revisions.filter(
+      (r) => r.page_type == SubmissionPageType.RESIZE,
+    );
+
+    return submissions.map((submission) => {
+      if (submission.page_type == SubmissionPageType.PAGE) {
+        const count = pageRevisions.filter((r) => r.page == submission.page);
+        return messageRevisionsRepo.create({
+          revisions: count.length,
+          page_type: SubmissionPageType.PAGE,
+          message,
+          page: submission.page,
+        });
+      }
+      const count = resizeRevisions.filter(
+        (r) =>
+          r.page == submission.page && r.resize_page == submission.resize_page,
+      );
+      return messageRevisionsRepo.create({
+        revisions: count.length,
+        page_type: SubmissionPageType.RESIZE,
+        page: submission.page,
+        message,
+        resize_page: submission.resize_page,
+      });
+    });
+  }
+
+  /**
+   * Create revision entities for submissions
+   */
+  private createSubmissionRevisions(
+    submissions: OrderSubmissionEntity[],
+  ): SubmissionRevisions[] {
+    const revisionMap = new Map<string, SubmissionRevisions>();
+
+    for (const submission of submissions) {
+      // Define a unique key for each revision type
+      const key =
+        submission.page_type === SubmissionPageType.PAGE
+          ? `PAGE:${submission.page}`
+          : `RESIZE:${submission.page}:${submission.resize_page}`;
+
+      if (!revisionMap.has(key)) {
+        const revision = this.submissionRevisionRepo.create({
+          page_type: submission.page_type,
+          page: submission.page,
+          resize_page:
+            submission.page_type === SubmissionPageType.RESIZE
+              ? submission.resize_page
+              : undefined,
+          order: submission.order,
+        });
+
+        revisionMap.set(key, revision);
+      }
+    }
+
+    return Array.from(revisionMap.values());
   }
 
   async complete(userId: string, id: string) {
     // Find the order belonging to the user with PENDING status
     const order = await this.orderRepository.findOne({
-      where: {
-        status: OrderStatus.PENDING,
-        id,
-        user: { id: userId },
-      },
+      where: [
+        {
+          status: OrderStatus.PENDING,
+          id,
+          user: { id: userId },
+        },
+        {
+          status: OrderStatus.PENDING,
+          id,
+          order_assignments: {
+            designer: {
+              user: {
+                id: userId,
+              },
+            },
+          },
+        },
+      ],
       relations: {
         user: true,
         order_assignments: {
@@ -881,6 +1033,7 @@ export class OrdersService {
         pages: {
           page_resizes: true,
         },
+        revisions: true,
         brief_attachments: true,
         submissions: true,
         conversations: true,
@@ -900,12 +1053,10 @@ export class OrdersService {
           'Sorry the order you are looking for does not exist or may have been deleted',
       });
 
-    const now = DateTime.now();
-
     const { conversations, ...orderDetails } = order;
 
     const conversation = conversations[0];
-    const revisionsPerPage = await this.getPageRevisionsCount(order?.id);
+    const submissions = this.groupLatestSubmissionsByPage(order);
 
     const response = AppResponse.getResponse('success', {
       data: {
@@ -913,13 +1064,105 @@ export class OrdersService {
           ...orderDetails,
           discount: orderDetails.discount?.discount,
           conversation,
-          revisions_per_page: revisionsPerPage,
+          submissions,
         },
       },
       message: 'orders retrieved successfully',
     });
 
     return response;
+  }
+
+  private groupLatestSubmissionsByPage(order: OrderEntity) {
+    let order_submissions: OrderSubmissions = {};
+
+    order.pages
+      .sort((a, b) => a.page_number - b.page_number)
+      .forEach((page) => {
+        const allPageSubmissions = order.submissions.filter(
+          (item) => item.page == page.page_number,
+        );
+
+        const pageOnlySubmissions = allPageSubmissions.filter(
+          (item) => item.page_type == SubmissionPageType.PAGE,
+        );
+
+        const resizeOnlySubmissions = allPageSubmissions.filter(
+          (item) =>
+            item.page_type == SubmissionPageType.RESIZE && !!item.resize_page,
+        );
+
+        // 🟦 Handle PAGE submissions
+        designExportFormats.forEach((format) => {
+          const exportFormatSubmission = pageOnlySubmissions
+            .filter((s) => s.export_format === format)
+            .sort((a, b) => a.created_at.getTime() - b.created_at.getTime());
+
+          const current = order_submissions[page.page_number.toString()] || {
+            formats: {},
+            resize: {},
+          };
+
+          order_submissions = {
+            ...order_submissions,
+            [page.page_number.toString()]: {
+              ...current,
+              formats: {
+                ...current.formats,
+                [format]: exportFormatSubmission.at(-1) ?? undefined,
+              },
+            },
+          };
+        });
+
+        // 🟨 Handle RESIZE submissions
+        page.page_resizes
+          .sort((a, b) => a.page - b.page)
+          .forEach((resizePage) => {
+            designExportFormats.forEach((format) => {
+              const exportFormatSubmission = resizeOnlySubmissions
+                .filter(
+                  (s) =>
+                    s.export_format === format &&
+                    s.resize_page == resizePage.page,
+                )
+                .sort(
+                  (a, b) => a.created_at.getTime() - b.created_at.getTime(),
+                );
+
+              const pageKey = page.page_number.toString();
+              const resizeKey = resizePage.page.toString();
+
+              const currentPage = order_submissions[pageKey] || {
+                formats: {},
+                resize: {},
+              };
+
+              const currentResize = currentPage.resize?.[resizeKey] || {
+                formats: {},
+              };
+
+              order_submissions = {
+                ...order_submissions,
+                [pageKey]: {
+                  ...currentPage,
+                  resize: {
+                    ...currentPage.resize,
+                    [resizeKey]: {
+                      ...currentResize,
+                      formats: {
+                        ...currentResize.formats,
+                        [format]: exportFormatSubmission.at(-1) ?? undefined,
+                      },
+                    },
+                  },
+                },
+              };
+            });
+          });
+      });
+
+    return order_submissions;
   }
 
   update(id: number, updateOrderDto: UpdateOrderDto) {
@@ -1080,17 +1323,18 @@ export class OrdersService {
     id: string,
     addDesignBriefDto: AddDesignBriefDto,
   ) {
-    const order = await this.orderRepository.findOne({
+    // Quick pre-check before transaction
+    const orderCheck = await this.orderRepository.findOne({
       where: { id, user: { id: userId } },
-      relations: ['pages'], // preload pages if you want them in memory
+      relations: ['pages', 'pages.page_resizes', 'brief_attachments'],
     });
 
-    if (!order)
+    if (!orderCheck)
       throw new BadRequestException(
         AppResponse.getFailedResponse('Order does not exist'),
       );
 
-    if (order.status !== OrderStatus.DRAFT) {
+    if (orderCheck.status !== OrderStatus.DRAFT) {
       throw new ForbiddenException(
         AppResponse.getFailedResponse(
           'This order can no longer be updated. Please create a new order or request an edit.',
@@ -1098,127 +1342,100 @@ export class OrdersService {
       );
     }
 
-    // Fetch pages
-    const pages = await this.orderPageRepository.find({
-      where: { order: { id } },
-      relations: ['page_resizes'], // so we can manage them cleanly
-    });
-
-    // Map resize extras by page
-    for (const page of pages) {
-      const resizes =
-        addDesignBriefDto.resize_extras?.filter(
-          (item) => item.design_page === page.page_number,
-        ) ?? [];
-
-      // Delete old resizes if you want a full replacement
-      if (page.page_resizes?.length) {
-        await this.orderResizeExtraRepo.remove(page.page_resizes);
-      }
-
-      const newResizes = resizes.map((item) =>
-        this.orderResizeExtraRepo.create({
-          ...item,
-          price: item.price, // apply multiplier
-          order,
-          order_page: page, // ✅ important
-        }),
-      );
-
-      // save all new ones at once
-      const savedResizes = await this.orderResizeExtraRepo.save(newResizes);
-
-      // attach back to page
-      page.page_resizes = savedResizes;
-      await this.orderPageRepository.save(page);
-    }
-
-    // Brief attachments
-    const briefAttachments = addDesignBriefDto.brief_attachments
-      ? await Promise.all(
-          addDesignBriefDto.brief_attachments.map(async (item) => {
-            const attachment = this.orderBriefAttachmentRepo.create(item);
-            return await this.orderBriefAttachmentRepo.save(attachment);
-          }),
-        )
-      : [];
-
-    // Update main order
-    order.brief_attachments = briefAttachments;
-    order.design_brief = addDesignBriefDto.design_brief;
-    order.design_assets = addDesignBriefDto.design_assets;
-    order.design_preferences = addDesignBriefDto.design_preference;
-    order.design_samples = addDesignBriefDto.design_samples;
-
-    await this.orderRepository.save(order);
-
-    return AppResponse.getSuccessResponse({
-      message: 'Design brief added successfully',
-      data: { details: addDesignBriefDto },
-    });
-  }
-  private async getPageRevisionsCount(orderId: string) {
     try {
-      const order = await this.orderRepository.findOne({
-        where: { id: orderId },
-        relations: {
-          pages: { page_resizes: true },
-          brief_attachments: true,
-          submissions: true,
-          order_edits: { pages: {} },
-          resize_extras: { order_page: true },
-        },
-        order: { created_at: 'DESC' },
-      });
-
-      if (!order) return {};
-
-      const revisionsPerPage: RevisionsPerPage = {};
-      const orderRevision =
-        designPlans[order.design_package ?? DesignPackage.BASIC].revison;
-
-      const pageSubmissions = (order.submissions ?? []).filter(
-        (sub) => sub.page_type === SubmissionPageType.PAGE,
-      );
-
-      const resizeSubmissions = (order.submissions ?? []).filter(
-        (sub) => sub.page_type === SubmissionPageType.RESIZE,
-      );
-
-      console.log({ resizeSubmissions, pageSubmissions });
-
-      for (const page of order.pages) {
-        const pageKey = page.page_number.toString();
-
-        const currentPageSubs = pageSubmissions.filter(
-          (sub) => sub.page === page.page_number,
-        );
-
-        const resize: RevisionObject = {};
-        for (const resizeItem of page.page_resizes) {
-          const currentResizeSubs = resizeSubmissions.filter(
-            (sub) =>
-              sub.page === page.page_number &&
-              sub.resize_page === resizeItem.page,
+      const result = await this.dataSource.transaction(
+        async (
+          manager,
+        ): Promise<ReturnType<typeof AppResponse.getSuccessResponse>> => {
+          // Use transactional repositories
+          const orderRepo = manager.getRepository(OrderEntity);
+          const pageRepo = manager.getRepository(OrderPageEntity);
+          const resizeRepo = manager.getRepository(OrderResizeExtraEntity);
+          const attachmentRepo = manager.getRepository(
+            OrderBriefAttachmentEntity,
           );
 
-          resize[resizeItem.page] = {
-            total: orderRevision,
-            count: Math.max(0, currentResizeSubs.length - 1),
-          };
-        }
+          // Re-fetch order within the transaction scope
+          const order = await orderRepo.findOne({
+            where: { id, user: { id: userId } },
+            relations: ['pages', 'pages.page_resizes', 'brief_attachments'],
+          });
 
-        revisionsPerPage[pageKey] = {
-          total: orderRevision,
-          count: Math.max(0, currentPageSubs.length - 1),
-          resize,
-        };
-      }
+          if (!order)
+            throw new BadRequestException(
+              AppResponse.getFailedResponse('Order does not exist'),
+            );
 
-      return revisionsPerPage;
-    } catch (error) {
-      console.log(`Error occurred while generating page revisions: ${error}`);
-      return {};
+          const pages = order.pages ?? [];
+
+          /** 🧩 Step 1: Manage page resizes */
+          for (const page of pages) {
+            const resizeExtrasForPage =
+              addDesignBriefDto.resize_extras?.filter(
+                (item) => item.design_page === page.page_number,
+              ) ?? [];
+
+            // Remove only resizes belonging to this page
+            if (page.page_resizes?.length) {
+              await resizeRepo.remove(page.page_resizes);
+              page.page_resizes = [];
+            }
+
+            // Create + save new ones if provided
+            const newResizes = resizeExtrasForPage.map((item) =>
+              resizeRepo.create({
+                ...item,
+                price: item.price,
+                order,
+                order_page: page,
+              }),
+            );
+
+            if (newResizes.length > 0) {
+              page.page_resizes = await resizeRepo.save(newResizes);
+              await pageRepo.save(page);
+            }
+          }
+
+          /** 📎 Step 2: Manage brief attachments */
+          // Remove old attachments if they exist
+          if (order.brief_attachments?.length) {
+            await attachmentRepo.remove(order.brief_attachments);
+            order.brief_attachments = [];
+          }
+
+          // Add new ones (if provided)
+          const briefAttachments = addDesignBriefDto.brief_attachments?.length
+            ? await attachmentRepo.save(
+                addDesignBriefDto.brief_attachments.map((item) =>
+                  attachmentRepo.create(item),
+                ),
+              )
+            : [];
+
+          /** 📝 Step 3: Update main order details */
+          order.brief_attachments = briefAttachments;
+          order.design_brief = addDesignBriefDto.design_brief;
+          order.design_assets = addDesignBriefDto.design_assets;
+          order.design_preferences = addDesignBriefDto.design_preference ?? [];
+          order.design_samples = addDesignBriefDto.design_samples;
+
+          await orderRepo.save(order);
+
+          return AppResponse.getSuccessResponse({
+            message: 'Design brief added successfully',
+            data: { details: addDesignBriefDto },
+          });
+        },
+      );
+
+      return result;
+    } catch (err) {
+      if (err instanceof HttpException) throw err;
+
+      throw new InternalServerErrorException(
+        AppResponse.getFailedResponse('Failed to add design brief'),
+      );
     }
   }
 }

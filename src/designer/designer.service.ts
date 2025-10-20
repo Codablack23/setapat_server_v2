@@ -1,11 +1,3 @@
-import { DesignExportFormats } from './../lib/enum/enum.order';
-import {
-  DesignPackage,
-  designPlans,
-  RevisionObject,
-  RevisionsPerPage,
-  SubmissionPageType,
-} from 'src/lib';
 /* eslint-disable @typescript-eslint/no-unsafe-assignment */
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
@@ -16,6 +8,9 @@ import {
   OrderStatus,
   OrderEditStatus,
   OrderAssignmentStatus,
+  OrderSubmissions,
+  designExportFormats,
+  SubmissionPageType,
 } from 'src/lib';
 
 export type OrdersQuery = 'pending' | 'withdrawal';
@@ -89,6 +84,8 @@ export class DesignerService {
     });
   }
   async getOrder(userId: string, orderId: string) {
+    console.log({ userId, orderId });
+
     const order = await this.orderRepo.findOne({
       where: {
         id: orderId,
@@ -110,6 +107,7 @@ export class DesignerService {
         order_edits: {
           pages: true,
         },
+        revisions: true,
         order_assignments: {
           designer: {
             user: true,
@@ -134,99 +132,110 @@ export class DesignerService {
 
     const { conversations, ...orderDetails } = order;
     const conversation = conversations[0];
-    const revisionsPerPage = await this.getPageRevisionsCount(order?.id);
+    const submissions = this.groupLatestSubmissionsByPage(order);
+
+    console.log({ userId, orderId, submissions, orderDetails });
 
     return AppResponse.getSuccessResponse({
       data: {
         order: {
           ...orderDetails,
           conversation,
-          revisions_per_page: revisionsPerPage,
+          submissions,
         },
       },
       message: 'Order retrieved successfully',
     });
   }
+  private groupLatestSubmissionsByPage(order: OrderEntity) {
+    let order_submissions: OrderSubmissions = {};
 
-  private async getPageRevisionsCount(orderId: string) {
-    try {
-      const order = await this.orderRepo.findOne({
-        where: { id: orderId },
-        relations: {
-          pages: { page_resizes: true },
-          brief_attachments: true,
-          submissions: true,
-          conversations: true,
-          order_edits: { pages: true },
-          resize_extras: { order_page: true },
-        },
-        order: { created_at: 'DESC' },
-      });
-
-      if (!order) return {};
-
-      const revisionsPerPage: RevisionsPerPage = {};
-      const orderRevision =
-        designPlans[order.design_package ?? DesignPackage.BASIC].revison;
-
-      const pageSubmissions = (order.submissions ?? []).filter(
-        (sub) => sub.page_type === SubmissionPageType.PAGE,
-      );
-
-      const resizeSubmissions = (order.submissions ?? []).filter(
-        (sub) => sub.page_type === SubmissionPageType.RESIZE,
-      );
-
-      for (const page of order.pages) {
-        const pageKey = page.page_number.toString();
-
-        const currentPageSubs = pageSubmissions.filter(
-          (sub) => sub.page == page.page_number,
+    order.pages
+      .sort((a, b) => a.page_number - b.page_number)
+      .forEach((page) => {
+        const allPageSubmissions = order.submissions.filter(
+          (item) => item.page == page.page_number,
         );
 
-        const pageCounts: Partial<Record<DesignExportFormats, number>> = {};
+        const pageOnlySubmissions = allPageSubmissions.filter(
+          (item) => item.page_type == SubmissionPageType.PAGE,
+        );
 
-        for (const item of currentPageSubs) {
-          const format = item.export_format;
-          // first submission starts at 0, next ones increment
-          pageCounts[format] = (pageCounts[format] ?? -1) + 1;
-        }
-        const highestCount = Math.max(...Object.values(pageCounts), 0);
-        const resize: RevisionObject = {};
-        for (const resizeItem of page.page_resizes) {
-          const currentResizeSubs = resizeSubmissions.filter(
-            (sub) =>
-              sub.page == page.page_number &&
-              sub.resize_page == resizeItem.page,
-          );
+        const resizeOnlySubmissions = allPageSubmissions.filter(
+          (item) =>
+            item.page_type == SubmissionPageType.RESIZE && !!item.resize_page,
+        );
 
-          const resizePageCounts: Partial<Record<DesignExportFormats, number>> =
-            {};
+        // 🟦 Handle PAGE submissions
+        designExportFormats.forEach((format) => {
+          const exportFormatSubmission = pageOnlySubmissions
+            .filter((s) => s.export_format === format)
+            .sort((a, b) => a.created_at.getTime() - b.created_at.getTime());
 
-          for (const item of currentResizeSubs) {
-            const format = item.export_format;
-            // first submission starts at 0, next ones increment
-            resizePageCounts[format] = (pageCounts[format] ?? -1) + 1;
-          }
-          const highestResizeCount = Math.max(...Object.values(pageCounts), 0);
-
-          resize[resizeItem.page] = {
-            total: orderRevision,
-            count: highestResizeCount,
+          const current = order_submissions[page.page_number.toString()] || {
+            formats: {},
+            resize: {},
           };
-        }
 
-        revisionsPerPage[pageKey] = {
-          total: orderRevision,
-          count: highestCount,
-          resize,
-        };
-      }
+          order_submissions = {
+            ...order_submissions,
+            [page.page_number.toString()]: {
+              ...current,
+              formats: {
+                ...current.formats,
+                [format]: exportFormatSubmission.at(-1) ?? undefined,
+              },
+            },
+          };
+        });
 
-      return revisionsPerPage;
-    } catch (error) {
-      console.log(`Error occurred while generating page revisions: ${error}`);
-      return {};
-    }
+        // 🟨 Handle RESIZE submissions
+        page.page_resizes
+          .sort((a, b) => a.page - b.page)
+          .forEach((resizePage) => {
+            designExportFormats.forEach((format) => {
+              const exportFormatSubmission = resizeOnlySubmissions
+                .filter(
+                  (s) =>
+                    s.export_format === format &&
+                    s.resize_page == resizePage.page,
+                )
+                .sort(
+                  (a, b) => a.created_at.getTime() - b.created_at.getTime(),
+                );
+
+              const pageKey = page.page_number.toString();
+              const resizeKey = resizePage.page.toString();
+
+              const currentPage = order_submissions[pageKey] || {
+                formats: {},
+                resize: {},
+              };
+
+              const currentResize = currentPage.resize?.[resizeKey] || {
+                formats: {},
+              };
+
+              order_submissions = {
+                ...order_submissions,
+                [pageKey]: {
+                  ...currentPage,
+                  resize: {
+                    ...currentPage.resize,
+                    [resizeKey]: {
+                      ...currentResize,
+                      formats: {
+                        ...currentResize.formats,
+                        [format]: exportFormatSubmission.at(-1) ?? undefined,
+                      },
+                    },
+                  },
+                },
+              };
+            });
+          });
+      });
+
+    return order_submissions;
   }
 }

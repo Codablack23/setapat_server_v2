@@ -27,7 +27,7 @@ export declare class OrdersController {
             order: {
                 discount: import("../entities/entity.discount").DiscountEntity | undefined;
                 conversation: import("../entities/entity.conversations").ConversationEntity;
-                revisions_per_page: import("src/lib").RevisionsPerPage;
+                submissions: import("src/lib").OrderSubmissions;
                 id: string;
                 design_class: import("src/lib").DesignClass;
                 order_id: string;
@@ -54,10 +54,10 @@ export declare class OrdersController {
                 order_assignments: import("../entities/entity.order_assignments").OrderAssignmentEntity[];
                 brief_attachments: import("../entities").OrderBriefAttachmentEntity[];
                 pages: import("../entities").OrderPageEntity[];
-                submissions: import("../entities").OrderSubmissionEntity[];
                 reviews: import("../entities/entity.order_reviews").OrderReviewEntity[];
                 receipts: import("../entities/entity.order_receipts").OrderReceiptEntity[];
                 notifications: import("../entities/entity.notification").NotificationEntity[];
+                revisions: import("../entities/entity.revisions").SubmissionRevisions[];
                 user: import("../entities").UserEntity;
                 created_at: Date;
                 updated_at: Date;
@@ -81,9 +81,7 @@ export declare class OrdersController {
     addDesignBrief(id: string, designBriefDto: AddDesignBriefDto, req: AuthRequest): Promise<{
         status: "success" | "failed";
         message: string;
-        data: {
-            details: AddDesignBriefDto;
-        } | undefined;
+        data: unknown;
     }>;
     completePayment(id: string, req: AuthRequest): Promise<{
         status: "success" | "failed";

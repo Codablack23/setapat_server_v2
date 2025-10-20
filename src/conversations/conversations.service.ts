@@ -13,6 +13,8 @@ import {
   ConversationStatus,
   MessageType,
   ParticipantStatus,
+  RevisionPerPage,
+  SubmissionPageType,
 } from 'src/lib';
 import { SendMessageDto } from './dto/create-conversation.dto';
 import { UserEntity } from 'src/entities';
@@ -43,11 +45,58 @@ export class ConversationsService {
     }
 
     // Step 2: Fetch messages
-    const messages = await this.messageRepo.find({
+    const messagesRes = await this.messageRepo.find({
       where: { conversation: { id } },
-      relations: { sender: true, attachments: true, order_submissions: true },
+      relations: {
+        sender: true,
+        attachments: true,
+        order_submissions: true,
+        revisions: true,
+      },
       order: { created_at: 'ASC' },
       take: 100, // 🔹 default pagination
+    });
+
+    const messages = messagesRes.map((message) => {
+      if (message.type != MessageType.SUBMISSION) return message;
+
+      let revisionsPerPage: RevisionPerPage = {};
+
+      message.revisions?.forEach((item) => {
+        const pageKey = item.page.toString();
+        const existing = revisionsPerPage[pageKey] || { count: 0, resize: {} };
+
+        if (item.page_type === SubmissionPageType.PAGE) {
+          revisionsPerPage = {
+            ...revisionsPerPage,
+            [pageKey]: {
+              ...existing,
+              count: item.revisions ?? 0,
+            },
+          };
+        } else if (
+          item.page_type === SubmissionPageType.RESIZE &&
+          item.resize_page
+        ) {
+          const resizeKey = item.resize_page.toString();
+
+          revisionsPerPage = {
+            ...revisionsPerPage,
+            [pageKey]: {
+              ...existing,
+              resize: {
+                ...existing.resize,
+                [resizeKey]: { count: item.revisions },
+              },
+            },
+          };
+        }
+      });
+
+      return {
+        ...message,
+        revisions: revisionsPerPage,
+      };
     });
 
     return AppResponse.getSuccessResponse({

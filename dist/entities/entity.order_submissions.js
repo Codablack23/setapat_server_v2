@@ -20,7 +20,6 @@ let OrderSubmissionEntity = class OrderSubmissionEntity {
     type;
     page_type;
     resize_page;
-    revisions;
     export_format;
     page;
     file_url;
@@ -59,10 +58,6 @@ __decorate([
     (0, typeorm_1.Column)("bigint", { nullable: true }),
     __metadata("design:type", Number)
 ], OrderSubmissionEntity.prototype, "resize_page", void 0);
-__decorate([
-    (0, typeorm_1.Column)("int", { default: 0 }),
-    __metadata("design:type", Number)
-], OrderSubmissionEntity.prototype, "revisions", void 0);
 __decorate([
     (0, typeorm_1.Column)({ type: "enum", enum: lib_1.DesignExportFormats }),
     __metadata("design:type", String)

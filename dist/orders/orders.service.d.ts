@@ -1,10 +1,10 @@
-import { MessageEntity } from './../entities/entity.messages';
-import { ConversationEntity } from './../entities/entity.conversations';
+import { MessageEntity } from 'src/entities/entity.messages';
+import { ConversationEntity } from 'src/entities/entity.conversations';
 import { AddDesignBriefDto, AddOrderSubmissionsDto, CreateOrderReviewDto, MakeOrderConfidentialDto } from './dto/update-order.dto';
 import { CreateOrderDto } from './dto/create-order.dto';
 import { UpdateOrderDto } from './dto/update-order.dto';
-import { DesignPackage, OrderStatus, OrdersUtil, RevisionsPerPage } from 'src/lib';
-import { Repository } from 'typeorm';
+import { DesignPackage, OrderStatus, OrderSubmissions, OrdersUtil } from 'src/lib';
+import { DataSource, Repository } from 'typeorm';
 import { OrderPageEntity, OrderEntity, UserEntity, OrderBriefAttachmentEntity, OrderSubmissionEntity, OrderResizeExtraEntity } from 'src/entities';
 import { NotificationEntity } from 'src/entities/entity.notification';
 import { OrderAssignmentEntity } from 'src/entities/entity.order_assignments';
@@ -15,9 +15,11 @@ import { CreateOrderEditDto } from './dto/create-edit.dto';
 import { OrderEditEntity } from 'src/entities/entity.order_edits';
 import { OrderEditPageEntity } from 'src/entities/entity.edit_page';
 import { ConversationParticipantEntity } from 'src/entities/entity.participants';
+import { SubmissionRevisions } from 'src/entities/entity.revisions';
 export declare class OrdersService {
     private readonly orderUtil;
     private readonly orderRepository;
+    private readonly dataSource;
     private readonly orderPageRepository;
     private readonly orderAssignmentRepo;
     private readonly designerRepo;
@@ -31,8 +33,9 @@ export declare class OrdersService {
     private readonly orderEditPageRepo;
     private readonly conversationRepo;
     private readonly messageRepo;
+    private readonly submissionRevisionRepo;
     private readonly participantsRepo;
-    constructor(orderUtil: OrdersUtil, orderRepository: Repository<OrderEntity>, orderPageRepository: Repository<OrderPageEntity>, orderAssignmentRepo: Repository<OrderAssignmentEntity>, designerRepo: Repository<DesignerProfileEntity>, orderBriefAttachmentRepo: Repository<OrderBriefAttachmentEntity>, orderResizeExtraRepo: Repository<OrderResizeExtraEntity>, notificationRepo: Repository<NotificationEntity>, orderSubmissionRepo: Repository<OrderSubmissionEntity>, orderReviewRepo: Repository<OrderReviewEntity>, orderReceiptRepo: Repository<OrderReceiptEntity>, orderEditRepo: Repository<OrderEditEntity>, orderEditPageRepo: Repository<OrderEditPageEntity>, conversationRepo: Repository<ConversationEntity>, messageRepo: Repository<MessageEntity>, participantsRepo: Repository<ConversationParticipantEntity>);
+    constructor(orderUtil: OrdersUtil, orderRepository: Repository<OrderEntity>, dataSource: DataSource, orderPageRepository: Repository<OrderPageEntity>, orderAssignmentRepo: Repository<OrderAssignmentEntity>, designerRepo: Repository<DesignerProfileEntity>, orderBriefAttachmentRepo: Repository<OrderBriefAttachmentEntity>, orderResizeExtraRepo: Repository<OrderResizeExtraEntity>, notificationRepo: Repository<NotificationEntity>, orderSubmissionRepo: Repository<OrderSubmissionEntity>, orderReviewRepo: Repository<OrderReviewEntity>, orderReceiptRepo: Repository<OrderReceiptEntity>, orderEditRepo: Repository<OrderEditEntity>, orderEditPageRepo: Repository<OrderEditPageEntity>, conversationRepo: Repository<ConversationEntity>, messageRepo: Repository<MessageEntity>, submissionRevisionRepo: Repository<SubmissionRevisions>, participantsRepo: Repository<ConversationParticipantEntity>);
     reviewOrder(userId: string, id: string, dto: CreateOrderReviewDto): Promise<{
         status: "success" | "failed";
         message: string;
@@ -54,6 +57,10 @@ export declare class OrdersService {
             submission_count: number;
         } | undefined;
     }>;
+    private validateRevisionLimit;
+    private createSubmissionMessages;
+    private createMessageRevisions;
+    private createSubmissionRevisions;
     complete(userId: string, id: string): Promise<{
         status: "success" | "failed";
         message: string;
@@ -115,7 +122,7 @@ export declare class OrdersService {
             order: {
                 discount: import("../entities/entity.discount").DiscountEntity | undefined;
                 conversation: ConversationEntity;
-                revisions_per_page: RevisionsPerPage;
+                submissions: OrderSubmissions;
                 id: string;
                 design_class: import("src/lib").DesignClass;
                 order_id: string;
@@ -142,16 +149,17 @@ export declare class OrdersService {
                 order_assignments: OrderAssignmentEntity[];
                 brief_attachments: OrderBriefAttachmentEntity[];
                 pages: OrderPageEntity[];
-                submissions: OrderSubmissionEntity[];
                 reviews: OrderReviewEntity[];
                 receipts: OrderReceiptEntity[];
                 notifications: NotificationEntity[];
+                revisions: SubmissionRevisions[];
                 user: UserEntity;
                 created_at: Date;
                 updated_at: Date;
             };
         } | undefined;
     }>;
+    private groupLatestSubmissionsByPage;
     update(id: number, updateOrderDto: UpdateOrderDto): string;
     generateReceipt(userId: string, id: string): Promise<{
         status: "success" | "failed";
@@ -173,9 +181,6 @@ export declare class OrdersService {
     addDesignBrief(userId: string, id: string, addDesignBriefDto: AddDesignBriefDto): Promise<{
         status: "success" | "failed";
         message: string;
-        data: {
-            details: AddDesignBriefDto;
-        } | undefined;
+        data: unknown;
     }>;
-    private getPageRevisionsCount;
 }

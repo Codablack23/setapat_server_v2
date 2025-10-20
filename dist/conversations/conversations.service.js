@@ -36,11 +36,52 @@ let ConversationsService = class ConversationsService {
         if (!conversation) {
             throw new common_1.ForbiddenException(lib_1.AppResponse.getFailedResponse('You are not allowed to view these messages'));
         }
-        const messages = await this.messageRepo.find({
+        const messagesRes = await this.messageRepo.find({
             where: { conversation: { id } },
-            relations: { sender: true, attachments: true, order_submissions: true },
+            relations: {
+                sender: true,
+                attachments: true,
+                order_submissions: true,
+                revisions: true,
+            },
             order: { created_at: 'ASC' },
             take: 100,
+        });
+        const messages = messagesRes.map((message) => {
+            if (message.type != lib_1.MessageType.SUBMISSION)
+                return message;
+            let revisionsPerPage = {};
+            message.revisions?.forEach((item) => {
+                const pageKey = item.page.toString();
+                const existing = revisionsPerPage[pageKey] || { count: 0, resize: {} };
+                if (item.page_type === lib_1.SubmissionPageType.PAGE) {
+                    revisionsPerPage = {
+                        ...revisionsPerPage,
+                        [pageKey]: {
+                            ...existing,
+                            count: item.revisions ?? 0,
+                        },
+                    };
+                }
+                else if (item.page_type === lib_1.SubmissionPageType.RESIZE &&
+                    item.resize_page) {
+                    const resizeKey = item.resize_page.toString();
+                    revisionsPerPage = {
+                        ...revisionsPerPage,
+                        [pageKey]: {
+                            ...existing,
+                            resize: {
+                                ...existing.resize,
+                                [resizeKey]: { count: item.revisions },
+                            },
+                        },
+                    };
+                }
+            });
+            return {
+                ...message,
+                revisions: revisionsPerPage,
+            };
         });
         return lib_1.AppResponse.getSuccessResponse({
             message: 'Messages retrieved successfully',

@@ -18,7 +18,7 @@ export declare class DesignerController {
         data: {
             order: {
                 conversation: import("../entities/entity.conversations").ConversationEntity;
-                revisions_per_page: import("src/lib").RevisionsPerPage;
+                submissions: import("src/lib").OrderSubmissions;
                 id: string;
                 design_class: import("src/lib").DesignClass;
                 order_id: string;
@@ -45,10 +45,10 @@ export declare class DesignerController {
                 order_assignments: import("../entities/entity.order_assignments").OrderAssignmentEntity[];
                 brief_attachments: import("../entities").OrderBriefAttachmentEntity[];
                 pages: import("../entities").OrderPageEntity[];
-                submissions: import("../entities").OrderSubmissionEntity[];
                 reviews: import("../entities/entity.order_reviews").OrderReviewEntity[];
                 receipts: import("../entities/entity.order_receipts").OrderReceiptEntity[];
                 notifications: import("../entities/entity.notification").NotificationEntity[];
+                revisions: import("../entities/entity.revisions").SubmissionRevisions[];
                 user: import("../entities").UserEntity;
                 discount?: import("../entities/entity.used_discount").UsedDiscountEntity;
                 created_at: Date;

@@ -15,7 +15,20 @@ export declare class ConversationsController {
         status: "failed" | "success";
         message: string;
         data: {
-            messages: import("../entities/entity.messages").MessageEntity[];
+            messages: (import("../entities/entity.messages").MessageEntity | {
+                revisions: import("src/lib").RevisionPerPage;
+                id: string;
+                conversation: import("../entities/entity.conversations").ConversationEntity;
+                content: string;
+                type: import("src/lib").MessageType;
+                is_read: boolean;
+                is_delivered: boolean;
+                sender: import("../entities").UserEntity;
+                attachments: import("../entities/entity.message_attachment").MessageAttachmentEntity[];
+                order_submissions?: import("../entities").OrderSubmissionEntity[];
+                created_at: Date;
+                updated_at: Date;
+            })[];
         } | undefined;
     }>;
 }

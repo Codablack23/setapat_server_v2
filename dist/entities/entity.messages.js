@@ -16,6 +16,7 @@ const entity_conversations_1 = require("./entity.conversations");
 const entity_message_attachment_1 = require("./entity.message_attachment");
 const entity_order_submissions_1 = require("./entity.order_submissions");
 const lib_1 = require("../lib");
+const entity_message_revisions_1 = require("./entity.message_revisions");
 let MessageEntity = class MessageEntity {
     id;
     conversation;
@@ -26,6 +27,7 @@ let MessageEntity = class MessageEntity {
     sender;
     attachments;
     order_submissions;
+    revisions;
     created_at;
     updated_at;
 };
@@ -72,6 +74,10 @@ __decorate([
     }),
     __metadata("design:type", Array)
 ], MessageEntity.prototype, "order_submissions", void 0);
+__decorate([
+    (0, typeorm_1.OneToMany)(() => entity_message_revisions_1.MessageRevisionEntity, (revision) => revision.message),
+    __metadata("design:type", Array)
+], MessageEntity.prototype, "revisions", void 0);
 __decorate([
     (0, typeorm_1.CreateDateColumn)(),
     __metadata("design:type", Date)

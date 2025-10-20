@@ -1,6 +1,8 @@
 import { DesignUnits } from 'src/lib';
 import { RESIZE_COST } from '../lib/schema';
 import {
+  BeforeInsert,
+  BeforeUpdate,
   Column,
   Entity,
   JoinColumn,
@@ -25,12 +27,13 @@ export class OrderResizeExtraEntity {
   @Column('int')
   page: number;
 
-  @Column('bigint', {
+  @Column('int', {
     transformer: {
       to: (value?: number | string) => {
         if (value == null) return 0;
         const num = Number(value);
-        return Math.round(num * 100); // ensure numeric conversion
+        console.log({ num, value });
+        return Math.round(num); // ensure numeric conversion
       },
       from: (value?: string) => {
         if (!value) return 0;
@@ -64,4 +67,12 @@ export class OrderResizeExtraEntity {
   })
   @JoinColumn()
   order_page: OrderPageEntity;
+
+  @BeforeInsert()
+  @BeforeUpdate()
+  applyPriceTransform() {
+    if (this.price != null) {
+      this.price = Math.round(Number(this.price) * 100);
+    }
+  }
 }

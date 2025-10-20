@@ -1,7 +1,6 @@
-import { DesignPackage, RevisionsPerPage } from 'src/lib';
 import { Repository } from 'typeorm';
 import { OrderEntity } from 'src/entities';
-import { OrderStatus } from 'src/lib';
+import { OrderStatus, OrderSubmissions } from 'src/lib';
 export type OrdersQuery = 'pending' | 'withdrawal';
 export declare class DesignerService {
     private readonly orderRepo;
@@ -20,13 +19,13 @@ export declare class DesignerService {
         data: {
             order: {
                 conversation: import("../entities/entity.conversations").ConversationEntity;
-                revisions_per_page: RevisionsPerPage;
+                submissions: OrderSubmissions;
                 id: string;
                 design_class: import("src/lib").DesignClass;
                 order_id: string;
                 total_revisions: string;
                 design_brief: string;
-                design_package: DesignPackage;
+                design_package: import("src/lib").DesignPackage;
                 type: import("src/lib").OrderType;
                 design_type: string;
                 design_assets?: any;
@@ -47,10 +46,10 @@ export declare class DesignerService {
                 order_assignments: import("../entities/entity.order_assignments").OrderAssignmentEntity[];
                 brief_attachments: import("src/entities").OrderBriefAttachmentEntity[];
                 pages: import("src/entities").OrderPageEntity[];
-                submissions: import("src/entities").OrderSubmissionEntity[];
                 reviews: import("../entities/entity.order_reviews").OrderReviewEntity[];
                 receipts: import("../entities/entity.order_receipts").OrderReceiptEntity[];
                 notifications: import("../entities/entity.notification").NotificationEntity[];
+                revisions: import("../entities/entity.revisions").SubmissionRevisions[];
                 user: import("src/entities").UserEntity;
                 discount?: import("../entities/entity.used_discount").UsedDiscountEntity;
                 created_at: Date;
@@ -58,5 +57,5 @@ export declare class DesignerService {
             };
         } | undefined;
     }>;
-    private getPageRevisionsCount;
+    private groupLatestSubmissionsByPage;
 }

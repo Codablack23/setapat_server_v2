@@ -13,4 +13,5 @@ export declare class OrderResizeExtraEntity {
     order: OrderEntity;
     edit_page?: OrderEditPageEntity;
     order_page: OrderPageEntity;
+    applyPriceTransform(): void;
 }

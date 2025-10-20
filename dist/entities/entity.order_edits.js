@@ -15,6 +15,7 @@ const lib_1 = require("../lib");
 const typeorm_1 = require("typeorm");
 const entity_order_1 = require("./entity.order");
 const entity_edit_page_1 = require("./entity.edit_page");
+const entity_revisions_1 = require("./entity.revisions");
 let OrderEditEntity = class OrderEditEntity {
     id;
     status;
@@ -23,6 +24,7 @@ let OrderEditEntity = class OrderEditEntity {
     updated_at;
     order;
     submissions;
+    revisions;
     pages;
 };
 exports.OrderEditEntity = OrderEditEntity;
@@ -59,6 +61,10 @@ __decorate([
     (0, typeorm_1.OneToMany)(() => entity_order_submissions_1.OrderSubmissionEntity, (submissions) => submissions.order_edit),
     __metadata("design:type", entity_order_submissions_1.OrderSubmissionEntity)
 ], OrderEditEntity.prototype, "submissions", void 0);
+__decorate([
+    (0, typeorm_1.OneToMany)(() => entity_revisions_1.SubmissionRevisions, (revisions) => revisions.order_edit),
+    __metadata("design:type", entity_revisions_1.SubmissionRevisions)
+], OrderEditEntity.prototype, "revisions", void 0);
 __decorate([
     (0, typeorm_1.OneToMany)(() => entity_edit_page_1.OrderEditPageEntity, (pages) => pages.order_edit),
     __metadata("design:type", Array)

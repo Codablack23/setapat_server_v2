@@ -11,6 +11,7 @@ import { OrderReviewEntity } from "./entity.order_reviews";
 import { OrderEditEntity } from './entity.order_edits';
 import { ConversationEntity } from './entity.conversations';
 import { UsedDiscountEntity } from './entity.used_discount';
+import { SubmissionRevisions } from './entity.revisions';
 export declare class OrderEntity {
     id: string;
     design_class: DesignClass;
@@ -43,6 +44,7 @@ export declare class OrderEntity {
     reviews: OrderReviewEntity[];
     receipts: OrderReceiptEntity[];
     notifications: NotificationEntity[];
+    revisions: SubmissionRevisions[];
     user: UserEntity;
     discount?: UsedDiscountEntity;
     created_at: Date;

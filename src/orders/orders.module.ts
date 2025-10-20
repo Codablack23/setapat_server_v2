@@ -20,6 +20,8 @@ import { OrderEditPageEntity } from 'src/entities/entity.edit_page';
 import { ConversationEntity } from 'src/entities/entity.conversations';
 import { ConversationParticipantEntity } from 'src/entities/entity.participants';
 import { MessageEntity } from 'src/entities/entity.messages';
+import { MessageRevisionEntity } from 'src/entities/entity.message_revisions';
+import { SubmissionRevisions } from 'src/entities/entity.revisions';
 
 @Module({
   imports: [
@@ -39,6 +41,8 @@ import { MessageEntity } from 'src/entities/entity.messages';
       ConversationEntity,
       ConversationParticipantEntity,
       MessageEntity,
+      SubmissionRevisions,
+      MessageRevisionEntity,
     ]),
   ],
   controllers: [OrdersController],

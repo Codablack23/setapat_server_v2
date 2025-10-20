@@ -13,6 +13,7 @@ import {
 } from "typeorm";
 import { OrderEntity } from "./entity.order";
 import { OrderEditPageEntity } from './entity.edit_page';
+import { SubmissionRevisions } from './entity.revisions';
 
 
 @Entity({ name: "order_edits" })
@@ -42,6 +43,9 @@ export class OrderEditEntity {
     
     @OneToMany(() => OrderSubmissionEntity, (submissions) => submissions.order_edit)
     submissions: OrderSubmissionEntity
+    
+    @OneToMany(() => SubmissionRevisions, (revisions) => revisions.order_edit)
+    revisions: SubmissionRevisions
     
     @OneToMany(() => OrderEditPageEntity, (pages) => pages.order_edit)
     pages: OrderEditPageEntity[]
