@@ -67,9 +67,13 @@ export class DesignerService {
       ];
     }
 
-    const orders = await this.orderRepo.find({
+    const ordersRes = await this.orderRepo.find({
       where,
       relations: {
+        pages: {
+          page_resizes: true,
+        },
+        submissions: true,
         order_assignments: {
           designer: { user: true },
         },
@@ -78,8 +82,16 @@ export class DesignerService {
       order: { created_at: 'DESC' },
     });
 
+    const orders = ordersRes.map((item) => {
+      const submissions = this.groupLatestSubmissionsByPage(item);
+      return {
+        ...item,
+        submissions,
+      };
+    });
+
     return AppResponse.getSuccessResponse({
-      data: { orders: this.sortOrders(orders) },
+      data: { orders: this.sortOrders(orders as unknown as OrderEntity[]) },
       message: 'Orders retrieved successfully',
     });
   }

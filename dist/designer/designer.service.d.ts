@@ -7,14 +7,14 @@ export declare class DesignerService {
     constructor(orderRepo: Repository<OrderEntity>);
     private sortOrders;
     getOrders(userId: string, query?: OrdersQuery): Promise<{
-        status: "failed" | "success";
+        status: "success" | "failed";
         message: string;
         data: {
             orders: OrderEntity[];
         } | undefined;
     }>;
     getOrder(userId: string, orderId: string): Promise<{
-        status: "failed" | "success";
+        status: "success" | "failed";
         message: string;
         data: {
             order: {

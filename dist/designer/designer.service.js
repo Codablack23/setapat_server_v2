@@ -65,15 +65,26 @@ let DesignerService = class DesignerService {
                 },
             ];
         }
-        const orders = await this.orderRepo.find({
+        const ordersRes = await this.orderRepo.find({
             where,
             relations: {
+                pages: {
+                    page_resizes: true,
+                },
+                submissions: true,
                 order_assignments: {
                     designer: { user: true },
                 },
                 order_edits: true,
             },
             order: { created_at: 'DESC' },
+        });
+        const orders = ordersRes.map((item) => {
+            const submissions = this.groupLatestSubmissionsByPage(item);
+            return {
+                ...item,
+                submissions,
+            };
         });
         return lib_1.AppResponse.getSuccessResponse({
             data: { orders: this.sortOrders(orders) },

@@ -633,16 +633,26 @@ let OrdersService = class OrdersService {
         });
     }
     async findAll(user) {
-        const orders = await this.orderRepository.find({
+        const ordersRes = await this.orderRepository.find({
             where: {
                 user: {
                     id: user.id,
                 },
             },
             relations: {
-                pages: true,
+                pages: {
+                    page_resizes: true,
+                },
+                submissions: true,
                 brief_attachments: true,
             },
+        });
+        const orders = ordersRes.map((item) => {
+            const submissions = this.groupLatestSubmissionsByPage(item);
+            return {
+                ...item,
+                submissions,
+            };
         });
         const response = lib_1.AppResponse.getResponse('success', {
             data: {

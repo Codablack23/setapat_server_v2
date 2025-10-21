@@ -5,7 +5,7 @@ export declare class DesignerController {
     private readonly designerService;
     constructor(designerService: DesignerService);
     getOrders(req: AuthRequest, status: OrdersQuery): Promise<{
-        status: "failed" | "success";
+        status: "success" | "failed";
         message: string;
         data: {
             orders: import("../entities").OrderEntity[];
@@ -13,7 +13,7 @@ export declare class DesignerController {
     }>;
     updateProfile(): void;
     getConversations(req: AuthRequest, id: string): Promise<{
-        status: "failed" | "success";
+        status: "success" | "failed";
         message: string;
         data: {
             order: {
