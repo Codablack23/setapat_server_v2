@@ -1033,9 +1033,6 @@ export class OrdersService {
   }
 
   async findOne(id: string, userId: string) {
-
-    console.log({id,userId})
-
     const order = await this.orderRepository.findOne({
       where: {
         id,
@@ -1060,8 +1057,6 @@ export class OrdersService {
         },
       },
     });
-
-    console.log({order})
 
     if (!order)
       throw new NotFoundException({
