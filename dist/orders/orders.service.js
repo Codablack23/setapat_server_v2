@@ -663,6 +663,7 @@ let OrdersService = class OrdersService {
         return response;
     }
     async findOne(id, userId) {
+        console.log({ id, userId });
         const order = await this.orderRepository.findOne({
             where: {
                 id,
@@ -676,6 +677,7 @@ let OrdersService = class OrdersService {
                 },
                 revisions: true,
                 brief_attachments: true,
+                order_assignments: true,
                 submissions: true,
                 conversations: true,
                 discount: {
@@ -686,6 +688,7 @@ let OrdersService = class OrdersService {
                 },
             },
         });
+        console.log({ order });
         if (!order)
             throw new common_1.NotFoundException({
                 status: 'failed',

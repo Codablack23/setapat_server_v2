@@ -19,6 +19,7 @@ import { FaqsModule } from './faqs/faqs.module';
 import { DesignerModule } from './designer/designer.module';
 import { SupervisorModule } from './supervisor/supervisor.module';
 import { CommonModule } from './common/common.module';
+import { ReceiptModule } from './receipt/receipt.module';
 
 @Module({
   imports: [
@@ -46,6 +47,7 @@ import { CommonModule } from './common/common.module';
     DesignerModule,
     SupervisorModule,
     CommonModule,
+    ReceiptModule,
   ],
   controllers: [AppController],
   providers: [AppService],

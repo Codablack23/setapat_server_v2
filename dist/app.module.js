@@ -28,6 +28,7 @@ const faqs_module_1 = require("./faqs/faqs.module");
 const designer_module_1 = require("./designer/designer.module");
 const supervisor_module_1 = require("./supervisor/supervisor.module");
 const common_module_1 = require("./common/common.module");
+const receipt_module_1 = require("./receipt/receipt.module");
 let AppModule = class AppModule {
 };
 exports.AppModule = AppModule;
@@ -58,6 +59,7 @@ exports.AppModule = AppModule = __decorate([
             designer_module_1.DesignerModule,
             supervisor_module_1.SupervisorModule,
             common_module_1.CommonModule,
+            receipt_module_1.ReceiptModule,
         ],
         controllers: [app_controller_1.AppController],
         providers: [app_service_1.AppService],

@@ -1033,6 +1033,9 @@ export class OrdersService {
   }
 
   async findOne(id: string, userId: string) {
+
+    console.log({id,userId})
+
     const order = await this.orderRepository.findOne({
       where: {
         id,
@@ -1046,6 +1049,7 @@ export class OrdersService {
         },
         revisions: true,
         brief_attachments: true,
+        order_assignments: true,
         submissions: true,
         conversations: true,
         discount: {
@@ -1056,6 +1060,8 @@ export class OrdersService {
         },
       },
     });
+
+    console.log({order})
 
     if (!order)
       throw new NotFoundException({
