@@ -76,7 +76,9 @@ __decorate([
     __metadata("design:type", String)
 ], OrderBriefAttachmentEntity.prototype, "file_url", void 0);
 __decorate([
-    (0, typeorm_1.ManyToOne)(() => entity_order_1.OrderEntity, (order) => order.brief_attachments),
+    (0, typeorm_1.ManyToOne)(() => entity_order_1.OrderEntity, (order) => order.brief_attachments, {
+        onDelete: 'CASCADE',
+    }),
     (0, typeorm_1.JoinColumn)(),
     __metadata("design:type", entity_order_1.OrderEntity)
 ], OrderBriefAttachmentEntity.prototype, "order", void 0);

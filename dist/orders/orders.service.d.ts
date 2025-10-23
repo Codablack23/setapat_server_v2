@@ -37,21 +37,24 @@ export declare class OrdersService {
     private readonly participantsRepo;
     constructor(orderUtil: OrdersUtil, orderRepository: Repository<OrderEntity>, dataSource: DataSource, orderPageRepository: Repository<OrderPageEntity>, orderAssignmentRepo: Repository<OrderAssignmentEntity>, designerRepo: Repository<DesignerProfileEntity>, orderBriefAttachmentRepo: Repository<OrderBriefAttachmentEntity>, orderResizeExtraRepo: Repository<OrderResizeExtraEntity>, notificationRepo: Repository<NotificationEntity>, orderSubmissionRepo: Repository<OrderSubmissionEntity>, orderReviewRepo: Repository<OrderReviewEntity>, orderReceiptRepo: Repository<OrderReceiptEntity>, orderEditRepo: Repository<OrderEditEntity>, orderEditPageRepo: Repository<OrderEditPageEntity>, conversationRepo: Repository<ConversationEntity>, messageRepo: Repository<MessageEntity>, submissionRevisionRepo: Repository<SubmissionRevisions>, participantsRepo: Repository<ConversationParticipantEntity>);
     reviewOrder(userId: string, id: string, dto: CreateOrderReviewDto): Promise<{
-        status: "success" | "failed";
+        status: "failed" | "success";
         message: string;
         data: {
             review: CreateOrderReviewDto;
         } | undefined;
     }>;
-    createOrderEdit(userId: string, orderId: string, dto: CreateOrderEditDto): Promise<{
-        status: "success" | "failed";
+    getActiveEdit(userId: string, orderId: string): Promise<{
+        status: "failed" | "success";
         message: string;
-        data: {
-            order_edit: string;
-        } | undefined;
+        data: unknown;
+    }>;
+    createOrderEdit(userId: string, orderId: string, dto: CreateOrderEditDto): Promise<{
+        status: "failed" | "success";
+        message: string;
+        data: {} | undefined;
     }>;
     submit(userId: string, id: string, dto: AddOrderSubmissionsDto): Promise<{
-        status: "success" | "failed";
+        status: "failed" | "success";
         message: string;
         data: {
             submission_count: number;
@@ -62,40 +65,40 @@ export declare class OrdersService {
     private createMessageRevisions;
     private createSubmissionRevisions;
     complete(userId: string, id: string): Promise<{
-        status: "success" | "failed";
+        status: "failed" | "success";
         message: string;
         data: {
             order_id: string;
         } | undefined;
     }>;
     commenceOrder(userId: string, id: string): Promise<{
-        status: "success" | "failed";
+        status: "failed" | "success";
         message: string;
         data: unknown;
     }>;
     makeConfidential(userId: string, id: string, dto: MakeOrderConfidentialDto): Promise<{
-        status: "success" | "failed";
+        status: "failed" | "success";
         message: string;
         data: {
             order: MakeOrderConfidentialDto;
         } | undefined;
     }>;
     submitEdit(userId: string, editId: string, editSubmissionDto: AddOrderSubmissionsDto): Promise<{
-        status: "success" | "failed";
+        status: "failed" | "success";
         message: string;
         data: {
             submission_count: number;
         } | undefined;
     }>;
     completeEdit(userId: string, editId: string): Promise<{
-        status: "success" | "failed";
+        status: "failed" | "success";
         message: string;
         data: {
             order_edit_id: string;
         } | undefined;
     }>;
     create(createOrderDto: CreateOrderDto, user: UserEntity): Promise<{
-        status: "success" | "failed";
+        status: "failed" | "success";
         message: string;
         data: {
             order: Partial<OrderEntity>;
@@ -109,11 +112,12 @@ export declare class OrdersService {
     private sendEditReceievedNotification;
     private sendCompletionNotification;
     findAll(user: Partial<UserEntity>): Promise<{
-        status: "success" | "failed";
+        status: "failed" | "success";
         message: string;
         data: {
             orders: {
                 submissions: OrderSubmissions;
+                status: OrderStatus;
                 id: string;
                 design_class: import("src/lib").DesignClass;
                 order_id: string;
@@ -125,7 +129,6 @@ export declare class OrdersService {
                 design_assets?: any;
                 design_preferences?: any;
                 design_samples?: any;
-                status: OrderStatus;
                 amount: number;
                 delivery_time: number;
                 confidential: boolean;
@@ -153,12 +156,14 @@ export declare class OrdersService {
         } | undefined;
     }>;
     findOne(id: string, userId: string): Promise<{
-        status: "success" | "failed";
+        status: "failed" | "success";
         message: string;
         data: {
             order: {
                 discount: import("../entities/entity.discount").DiscountEntity | undefined;
                 conversation: ConversationEntity;
+                status: OrderStatus;
+                active_edit: OrderEditEntity | undefined;
                 submissions: OrderSubmissions;
                 id: string;
                 design_class: import("src/lib").DesignClass;
@@ -171,7 +176,6 @@ export declare class OrdersService {
                 design_assets?: any;
                 design_preferences?: any;
                 design_samples?: any;
-                status: OrderStatus;
                 amount: number;
                 delivery_time: number;
                 confidential: boolean;
@@ -199,24 +203,24 @@ export declare class OrdersService {
     private groupLatestSubmissionsByPage;
     update(id: number, updateOrderDto: UpdateOrderDto): string;
     generateReceipt(userId: string, id: string): Promise<{
-        status: "success" | "failed";
+        status: "failed" | "success";
         message: string;
         data: unknown;
     }>;
     completePayment(id: string, user: UserEntity): Promise<{
-        status: "success" | "failed";
+        status: "failed" | "success";
         message: string;
         data: {
             order: OrderEntity;
         } | undefined;
     }>;
     remove(id: string, userId: string): Promise<{
-        status: "success" | "failed";
+        status: "failed" | "success";
         message: string;
         data: unknown;
     }>;
     addDesignBrief(userId: string, id: string, addDesignBriefDto: AddDesignBriefDto): Promise<{
-        status: "success" | "failed";
+        status: "failed" | "success";
         message: string;
         data: unknown;
     }>;

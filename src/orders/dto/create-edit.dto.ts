@@ -61,7 +61,7 @@ export class CreateOrderEditPageDto {
   @ApiProperty({ description: 'edit cost', example: 1000, required: true })
   @IsNumber()
   @Min(designPlans.BASIC.price.A * 0.25)
-  price: number = 1;
+  price: number = 1250;
 
   @ApiProperty({ type: [CreateOrderResizeExtraDto], required: false })
   @IsOptional()

@@ -102,6 +102,11 @@ export class OrdersController {
   }
 
   // Edit actions (always body-driven for editId)
+  @Get(':id/edit')
+  getOrderEditStatus(@Param('id') id: string, @Request() req: AuthRequest) {
+    return this.ordersService.getActiveEdit(req.user.id, id);
+  }
+  // Edit actions (always body-driven for editId)
   @Post(':id/edit')
   createOrderEdit(
     @Param('id') id: string,

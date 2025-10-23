@@ -59,6 +59,9 @@ let OrdersController = class OrdersController {
     makeOrderConfidential(req, id, dto) {
         return this.ordersService.makeConfidential(req.user.id, id, dto);
     }
+    getOrderEditStatus(id, req) {
+        return this.ordersService.getActiveEdit(req.user.id, id);
+    }
     createOrderEdit(id, dto, req) {
         return this.ordersService.createOrderEdit(req.user.id, id, dto);
     }
@@ -168,6 +171,14 @@ __decorate([
     __metadata("design:paramtypes", [Object, String, update_order_dto_1.MakeOrderConfidentialDto]),
     __metadata("design:returntype", void 0)
 ], OrdersController.prototype, "makeOrderConfidential", null);
+__decorate([
+    (0, common_1.Get)(':id/edit'),
+    __param(0, (0, common_1.Param)('id')),
+    __param(1, (0, common_1.Request)()),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [String, Object]),
+    __metadata("design:returntype", void 0)
+], OrdersController.prototype, "getOrderEditStatus", null);
 __decorate([
     (0, common_1.Post)(':id/edit'),
     __param(0, (0, common_1.Param)('id')),

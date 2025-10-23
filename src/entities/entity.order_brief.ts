@@ -54,7 +54,9 @@ export class OrderBriefAttachmentEntity {
   })
   file_url: string;
 
-  @ManyToOne(() => OrderEntity, (order) => order.brief_attachments)
+  @ManyToOne(() => OrderEntity, (order) => order.brief_attachments, {
+    onDelete: 'CASCADE',
+  })
   @JoinColumn()
   order: OrderEntity;
 }

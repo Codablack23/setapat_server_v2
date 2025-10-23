@@ -157,6 +157,38 @@ export class OrdersService {
       },
     });
   }
+  async getActiveEdit(userId: string, orderId: string) {
+    const order = await this.orderRepository.findOne({
+      where: {
+        id: orderId,
+        user: { id: userId },
+      },
+      relations: {
+        order_edits: true,
+        pages: true,
+      },
+    });
+
+    if (!order) {
+      throw new NotFoundException(
+        AppResponse.getFailedResponse('Order could not be found'),
+      );
+    }
+
+    const activeEdits = order.order_edits.filter(
+      (edit) => edit.status === OrderEditStatus.IN_PROGRESS,
+    );
+    if (activeEdits.length > 0) {
+      throw new ForbiddenException(
+        AppResponse.getFailedResponse(
+          'Sorry you can only make one edit at a time, please close out all pending edit before proceeding',
+        ),
+      );
+    }
+    return AppResponse.getSuccessResponse({
+      message: 'No active edit',
+    });
+  }
 
   async createOrderEdit(
     userId: string,
@@ -201,6 +233,7 @@ export class OrdersService {
         const orderEditPage = this.orderEditPageRepo.create({
           page: editPage.page,
           revisions: editPage.revisions,
+          price: editPage.price,
           order_edit: savedOrderEdit,
         });
         const newEditPage = await this.orderEditPageRepo.save(orderEditPage);
@@ -214,6 +247,7 @@ export class OrdersService {
             this.orderResizeExtraRepo.create({
               ...pageResize,
               order_page: orderPage,
+              price: 100000,
               order,
               edit_page: newEditPage,
             }),
@@ -226,6 +260,7 @@ export class OrdersService {
 
     // Update last_edited_at
     order.last_edited_at = new Date();
+    order.order_edits = [orderEdit];
     await this.orderRepository.save(order);
 
     this.sendEditReceievedNotification(order.user, order).catch((err) => {
@@ -235,7 +270,7 @@ export class OrdersService {
     return AppResponse.getSuccessResponse({
       message: 'Order edit created successfully',
       data: {
-        order_edit: savedOrderEdit.id,
+        // order_edit: savedOrderEdit.id,
       },
     });
   }
@@ -1006,6 +1041,7 @@ export class OrdersService {
         },
       },
       relations: {
+        order_edits: true,
         pages: {
           page_resizes: true,
         },
@@ -1015,10 +1051,15 @@ export class OrdersService {
     });
 
     const orders = ordersRes.map((item) => {
+      const activeEdit = item.order_edits.find(
+        (item) => item.status == OrderEditStatus.IN_PROGRESS,
+      );
+
       const submissions = this.groupLatestSubmissionsByPage(item);
       return {
         ...item,
         submissions,
+        status: activeEdit ? OrderStatus.EDIT : item.status,
       };
     });
 
@@ -1047,6 +1088,9 @@ export class OrdersService {
         revisions: true,
         brief_attachments: true,
         order_assignments: true,
+        order_edits: {
+          pages: true,
+        },
         submissions: true,
         conversations: true,
         discount: {
@@ -1054,6 +1098,7 @@ export class OrdersService {
         },
         resize_extras: {
           order_page: true,
+          edit_page: true,
         },
       },
     });
@@ -1064,6 +1109,10 @@ export class OrdersService {
         message:
           'Sorry the order you are looking for does not exist or may have been deleted',
       });
+
+    const activeEdit = order.order_edits.find(
+      (item) => item.status == OrderEditStatus.IN_PROGRESS,
+    );
 
     const { conversations, ...orderDetails } = order;
 
@@ -1076,6 +1125,8 @@ export class OrdersService {
           ...orderDetails,
           discount: orderDetails.discount?.discount,
           conversation,
+          status: OrderStatus.EDIT,
+          active_edit: activeEdit,
           submissions,
         },
       },

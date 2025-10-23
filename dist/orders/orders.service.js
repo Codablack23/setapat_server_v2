@@ -101,6 +101,28 @@ let OrdersService = class OrdersService {
             },
         });
     }
+    async getActiveEdit(userId, orderId) {
+        const order = await this.orderRepository.findOne({
+            where: {
+                id: orderId,
+                user: { id: userId },
+            },
+            relations: {
+                order_edits: true,
+                pages: true,
+            },
+        });
+        if (!order) {
+            throw new common_1.NotFoundException(lib_1.AppResponse.getFailedResponse('Order could not be found'));
+        }
+        const activeEdits = order.order_edits.filter((edit) => edit.status === lib_1.OrderEditStatus.IN_PROGRESS);
+        if (activeEdits.length > 0) {
+            throw new common_1.ForbiddenException(lib_1.AppResponse.getFailedResponse('Sorry you can only make one edit at a time, please close out all pending edit before proceeding'));
+        }
+        return lib_1.AppResponse.getSuccessResponse({
+            message: 'No active edit',
+        });
+    }
     async createOrderEdit(userId, orderId, dto) {
         const order = await this.orderRepository.findOne({
             where: {
@@ -125,6 +147,7 @@ let OrdersService = class OrdersService {
             const orderEditPage = this.orderEditPageRepo.create({
                 page: editPage.page,
                 revisions: editPage.revisions,
+                price: editPage.price,
                 order_edit: savedOrderEdit,
             });
             const newEditPage = await this.orderEditPageRepo.save(orderEditPage);
@@ -133,6 +156,7 @@ let OrdersService = class OrdersService {
                 const resizePages = editPage.page_resizes.map((pageResize) => this.orderResizeExtraRepo.create({
                     ...pageResize,
                     order_page: orderPage,
+                    price: 100000,
                     order,
                     edit_page: newEditPage,
                 }));
@@ -140,15 +164,14 @@ let OrdersService = class OrdersService {
             }
         }));
         order.last_edited_at = new Date();
+        order.order_edits = [orderEdit];
         await this.orderRepository.save(order);
         this.sendEditReceievedNotification(order.user, order).catch((err) => {
             console.error(`An error occured sending Notifications ${order.order_id}`);
         });
         return lib_1.AppResponse.getSuccessResponse({
             message: 'Order edit created successfully',
-            data: {
-                order_edit: savedOrderEdit.id,
-            },
+            data: {},
         });
     }
     async submit(userId, id, dto) {
@@ -640,6 +663,7 @@ let OrdersService = class OrdersService {
                 },
             },
             relations: {
+                order_edits: true,
                 pages: {
                     page_resizes: true,
                 },
@@ -648,10 +672,12 @@ let OrdersService = class OrdersService {
             },
         });
         const orders = ordersRes.map((item) => {
+            const activeEdit = item.order_edits.find((item) => item.status == lib_1.OrderEditStatus.IN_PROGRESS);
             const submissions = this.groupLatestSubmissionsByPage(item);
             return {
                 ...item,
                 submissions,
+                status: activeEdit ? lib_1.OrderStatus.EDIT : item.status,
             };
         });
         const response = lib_1.AppResponse.getResponse('success', {
@@ -677,6 +703,9 @@ let OrdersService = class OrdersService {
                 revisions: true,
                 brief_attachments: true,
                 order_assignments: true,
+                order_edits: {
+                    pages: true,
+                },
                 submissions: true,
                 conversations: true,
                 discount: {
@@ -684,6 +713,7 @@ let OrdersService = class OrdersService {
                 },
                 resize_extras: {
                     order_page: true,
+                    edit_page: true,
                 },
             },
         });
@@ -692,6 +722,7 @@ let OrdersService = class OrdersService {
                 status: 'failed',
                 message: 'Sorry the order you are looking for does not exist or may have been deleted',
             });
+        const activeEdit = order.order_edits.find((item) => item.status == lib_1.OrderEditStatus.IN_PROGRESS);
         const { conversations, ...orderDetails } = order;
         const conversation = conversations[0];
         const submissions = this.groupLatestSubmissionsByPage(order);
@@ -701,6 +732,8 @@ let OrdersService = class OrdersService {
                     ...orderDetails,
                     discount: orderDetails.discount?.discount,
                     conversation,
+                    status: lib_1.OrderStatus.EDIT,
+                    active_edit: activeEdit,
                     submissions,
                 },
             },

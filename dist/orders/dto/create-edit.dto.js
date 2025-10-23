@@ -60,7 +60,7 @@ __decorate([
 class CreateOrderEditPageDto {
     page;
     revisions = 1;
-    price = 1;
+    price = 1250;
     page_resizes;
 }
 exports.CreateOrderEditPageDto = CreateOrderEditPageDto;

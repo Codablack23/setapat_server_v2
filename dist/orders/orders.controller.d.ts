@@ -7,18 +7,19 @@ export declare class OrdersController {
     private readonly ordersService;
     constructor(ordersService: OrdersService);
     create(createOrderDto: CreateOrderDto, req: AuthRequest): Promise<{
-        status: "success" | "failed";
+        status: "failed" | "success";
         message: string;
         data: {
             order: Partial<import("../entities").OrderEntity>;
         } | undefined;
     }>;
     findAll(req: AuthRequest): Promise<{
-        status: "success" | "failed";
+        status: "failed" | "success";
         message: string;
         data: {
             orders: {
                 submissions: import("src/lib").OrderSubmissions;
+                status: import("src/lib").OrderStatus;
                 id: string;
                 design_class: import("src/lib").DesignClass;
                 order_id: string;
@@ -30,7 +31,6 @@ export declare class OrdersController {
                 design_assets?: any;
                 design_preferences?: any;
                 design_samples?: any;
-                status: import("src/lib").OrderStatus;
                 amount: number;
                 delivery_time: number;
                 confidential: boolean;
@@ -58,12 +58,14 @@ export declare class OrdersController {
         } | undefined;
     }>;
     findOne(id: string, req: AuthRequest): Promise<{
-        status: "success" | "failed";
+        status: "failed" | "success";
         message: string;
         data: {
             order: {
                 discount: import("../entities/entity.discount").DiscountEntity | undefined;
                 conversation: import("../entities/entity.conversations").ConversationEntity;
+                status: import("src/lib").OrderStatus;
+                active_edit: import("../entities/entity.order_edits").OrderEditEntity | undefined;
                 submissions: import("src/lib").OrderSubmissions;
                 id: string;
                 design_class: import("src/lib").DesignClass;
@@ -76,7 +78,6 @@ export declare class OrdersController {
                 design_assets?: any;
                 design_preferences?: any;
                 design_samples?: any;
-                status: import("src/lib").OrderStatus;
                 amount: number;
                 delivery_time: number;
                 confidential: boolean;
@@ -102,78 +103,81 @@ export declare class OrdersController {
         } | undefined;
     }>;
     submitOrder(req: AuthRequest, id: string, dto: AddOrderSubmissionsDto): Promise<{
-        status: "success" | "failed";
+        status: "failed" | "success";
         message: string;
         data: {
             submission_count: number;
         } | undefined;
     }>;
     completeOrder(id: string, req: AuthRequest): Promise<{
-        status: "success" | "failed";
+        status: "failed" | "success";
         message: string;
         data: {
             order_id: string;
         } | undefined;
     }>;
     addDesignBrief(id: string, designBriefDto: AddDesignBriefDto, req: AuthRequest): Promise<{
-        status: "success" | "failed";
+        status: "failed" | "success";
         message: string;
         data: unknown;
     }>;
     completePayment(id: string, req: AuthRequest): Promise<{
-        status: "success" | "failed";
+        status: "failed" | "success";
         message: string;
         data: {
             order: import("../entities").OrderEntity;
         } | undefined;
     }>;
     commenceOrder(id: string, req: AuthRequest): Promise<{
-        status: "success" | "failed";
+        status: "failed" | "success";
         message: string;
         data: unknown;
     }>;
     generateReceipt(id: string, req: AuthRequest): Promise<{
-        status: "success" | "failed";
+        status: "failed" | "success";
         message: string;
         data: unknown;
     }>;
     addOrderReview(req: AuthRequest, id: string, dto: CreateOrderReviewDto): Promise<{
-        status: "success" | "failed";
+        status: "failed" | "success";
         message: string;
         data: {
             review: CreateOrderReviewDto;
         } | undefined;
     }>;
     makeOrderConfidential(req: AuthRequest, id: string, dto: MakeOrderConfidentialDto): Promise<{
-        status: "success" | "failed";
+        status: "failed" | "success";
         message: string;
         data: {
             order: MakeOrderConfidentialDto;
         } | undefined;
     }>;
-    createOrderEdit(id: string, dto: CreateOrderEditDto, req: AuthRequest): Promise<{
-        status: "success" | "failed";
+    getOrderEditStatus(id: string, req: AuthRequest): Promise<{
+        status: "failed" | "success";
         message: string;
-        data: {
-            order_edit: string;
-        } | undefined;
+        data: unknown;
+    }>;
+    createOrderEdit(id: string, dto: CreateOrderEditDto, req: AuthRequest): Promise<{
+        status: "failed" | "success";
+        message: string;
+        data: {} | undefined;
     }>;
     submitOrderEdit(id: string, dto: AddOrderSubmissionsDto, req: AuthRequest): Promise<{
-        status: "success" | "failed";
+        status: "failed" | "success";
         message: string;
         data: {
             submission_count: number;
         } | undefined;
     }>;
     completeOrderEdit(id: string, req: AuthRequest): Promise<{
-        status: "success" | "failed";
+        status: "failed" | "success";
         message: string;
         data: {
             order_edit_id: string;
         } | undefined;
     }>;
     remove(id: string, req: AuthRequest): Promise<{
-        status: "success" | "failed";
+        status: "failed" | "success";
         message: string;
         data: unknown;
     }>;
