@@ -732,7 +732,7 @@ let OrdersService = class OrdersService {
                     ...orderDetails,
                     discount: orderDetails.discount?.discount,
                     conversation,
-                    status: lib_1.OrderStatus.EDIT,
+                    status: activeEdit ? lib_1.OrderStatus.EDIT : order.status,
                     active_edit: activeEdit,
                     submissions,
                 },

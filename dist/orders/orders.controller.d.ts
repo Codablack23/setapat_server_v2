@@ -7,14 +7,14 @@ export declare class OrdersController {
     private readonly ordersService;
     constructor(ordersService: OrdersService);
     create(createOrderDto: CreateOrderDto, req: AuthRequest): Promise<{
-        status: "failed" | "success";
+        status: "success" | "failed";
         message: string;
         data: {
             order: Partial<import("../entities").OrderEntity>;
         } | undefined;
     }>;
     findAll(req: AuthRequest): Promise<{
-        status: "failed" | "success";
+        status: "success" | "failed";
         message: string;
         data: {
             orders: {
@@ -58,7 +58,7 @@ export declare class OrdersController {
         } | undefined;
     }>;
     findOne(id: string, req: AuthRequest): Promise<{
-        status: "failed" | "success";
+        status: "success" | "failed";
         message: string;
         data: {
             order: {
@@ -103,81 +103,81 @@ export declare class OrdersController {
         } | undefined;
     }>;
     submitOrder(req: AuthRequest, id: string, dto: AddOrderSubmissionsDto): Promise<{
-        status: "failed" | "success";
+        status: "success" | "failed";
         message: string;
         data: {
             submission_count: number;
         } | undefined;
     }>;
     completeOrder(id: string, req: AuthRequest): Promise<{
-        status: "failed" | "success";
+        status: "success" | "failed";
         message: string;
         data: {
             order_id: string;
         } | undefined;
     }>;
     addDesignBrief(id: string, designBriefDto: AddDesignBriefDto, req: AuthRequest): Promise<{
-        status: "failed" | "success";
+        status: "success" | "failed";
         message: string;
         data: unknown;
     }>;
     completePayment(id: string, req: AuthRequest): Promise<{
-        status: "failed" | "success";
+        status: "success" | "failed";
         message: string;
         data: {
             order: import("../entities").OrderEntity;
         } | undefined;
     }>;
     commenceOrder(id: string, req: AuthRequest): Promise<{
-        status: "failed" | "success";
+        status: "success" | "failed";
         message: string;
         data: unknown;
     }>;
     generateReceipt(id: string, req: AuthRequest): Promise<{
-        status: "failed" | "success";
+        status: "success" | "failed";
         message: string;
         data: unknown;
     }>;
     addOrderReview(req: AuthRequest, id: string, dto: CreateOrderReviewDto): Promise<{
-        status: "failed" | "success";
+        status: "success" | "failed";
         message: string;
         data: {
             review: CreateOrderReviewDto;
         } | undefined;
     }>;
     makeOrderConfidential(req: AuthRequest, id: string, dto: MakeOrderConfidentialDto): Promise<{
-        status: "failed" | "success";
+        status: "success" | "failed";
         message: string;
         data: {
             order: MakeOrderConfidentialDto;
         } | undefined;
     }>;
     getOrderEditStatus(id: string, req: AuthRequest): Promise<{
-        status: "failed" | "success";
+        status: "success" | "failed";
         message: string;
         data: unknown;
     }>;
     createOrderEdit(id: string, dto: CreateOrderEditDto, req: AuthRequest): Promise<{
-        status: "failed" | "success";
+        status: "success" | "failed";
         message: string;
         data: {} | undefined;
     }>;
     submitOrderEdit(id: string, dto: AddOrderSubmissionsDto, req: AuthRequest): Promise<{
-        status: "failed" | "success";
+        status: "success" | "failed";
         message: string;
         data: {
             submission_count: number;
         } | undefined;
     }>;
     completeOrderEdit(id: string, req: AuthRequest): Promise<{
-        status: "failed" | "success";
+        status: "success" | "failed";
         message: string;
         data: {
             order_edit_id: string;
         } | undefined;
     }>;
     remove(id: string, req: AuthRequest): Promise<{
-        status: "failed" | "success";
+        status: "success" | "failed";
         message: string;
         data: unknown;
     }>;

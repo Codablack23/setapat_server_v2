@@ -1125,7 +1125,7 @@ export class OrdersService {
           ...orderDetails,
           discount: orderDetails.discount?.discount,
           conversation,
-          status: OrderStatus.EDIT,
+          status: activeEdit ? OrderStatus.EDIT : order.status,
           active_edit: activeEdit,
           submissions,
         },
