@@ -1,3 +1,4 @@
+import { SocketGateway } from './../socket/socket.gateway';
 import { MessageEntity } from 'src/entities/entity.messages';
 import { MessageRevisionEntity } from 'src/entities/entity.message_revisions';
 import { ConversationEntity } from 'src/entities/entity.conversations';
@@ -119,6 +120,8 @@ export class OrdersService {
 
     @InjectRepository(ConversationParticipantEntity)
     private readonly participantsRepo: Repository<ConversationParticipantEntity>,
+
+    private socketGateway: SocketGateway,
   ) {}
 
   async reviewOrder(userId: string, id: string, dto: CreateOrderReviewDto) {
@@ -141,7 +144,7 @@ export class OrdersService {
     if (order.reviews.length > 0)
       throw new ForbiddenException(
         AppResponse.getFailedResponse(
-          'You have already added a  review for this order',
+          'You have already added a review for this order',
         ),
       );
 
@@ -370,6 +373,8 @@ export class OrdersService {
 
       await messageRevisionRepo.save(messageRevisions);
     });
+
+    this.socketGateway.emitNewMessage(order.user.id);
 
     // 5️⃣ Notify user asynchronously
     this.sendSubmissionNotification(order.user, order).catch((err) =>
@@ -918,7 +923,7 @@ export class OrdersService {
 
   private async sendNewOrderNotification(user: UserEntity, order: OrderEntity) {
     const description = `Hi ${user.firstname}, your order has been received. View order to track progress. Thank you for choosing us!`;
-
+    const caption = 'Order is Received!';
     const newNotification = this.notificationRepo.create({
       user,
       type: NotificationTypes.ORDER,
@@ -931,8 +936,12 @@ export class OrdersService {
 
     await MailerProvider.sendMail({
       to: user.email,
-      subject: 'Order is Received!',
+      subject: caption,
       html: `<p>${description}</p>`,
+    });
+    this.socketGateway.emitNewNotification(user.id, {
+      caption,
+      description,
     });
   }
   private async sendRevisionCountNotification(
@@ -957,6 +966,10 @@ export class OrdersService {
       subject: caption,
       html: `<p>${description}</p>`,
     });
+    this.socketGateway.emitNewNotification(user.id, {
+      caption,
+      description,
+    });
   }
   private async sendSubmissionNotification(
     user: UserEntity,
@@ -979,6 +992,11 @@ export class OrdersService {
       to: user.email,
       subject: caption,
       html: `<p>${description}</p>`,
+    });
+
+    this.socketGateway.emitNewNotification(user.id, {
+      caption,
+      description,
     });
   }
 
@@ -1003,6 +1021,11 @@ export class OrdersService {
       to: user.email,
       subject: caption,
       html: `<p>${description}</p>`,
+    });
+
+    this.socketGateway.emitNewNotification(user.id, {
+      caption,
+      description,
     });
   }
   private async sendCompletionNotification(
@@ -1030,6 +1053,11 @@ export class OrdersService {
       to: user.email,
       subject: caption,
       html: `<p>${description}</p>`,
+    });
+
+    this.socketGateway.emitNewNotification(user.id, {
+      caption,
+      description,
     });
   }
 
@@ -1385,7 +1413,20 @@ export class OrdersService {
     userId: string,
     id: string,
     addDesignBriefDto: AddDesignBriefDto,
+    ignoreBriefAttachmentCheck = false,
   ) {
+    if (
+      !ignoreBriefAttachmentCheck &&
+      !addDesignBriefDto.design_brief &&
+      (!addDesignBriefDto.brief_attachments ||
+        addDesignBriefDto.brief_attachments.length === 0)
+    ) {
+      throw new BadRequestException(
+        AppResponse.getFailedResponse(
+          'Either a design brief or at least one attachment is required.',
+        ),
+      );
+    }
     // Quick pre-check before transaction
     const orderCheck = await this.orderRepository.findOne({
       where: { id, user: { id: userId } },
@@ -1494,6 +1535,8 @@ export class OrdersService {
 
       return result;
     } catch (err) {
+      console.log(err);
+
       if (err instanceof HttpException) throw err;
 
       throw new InternalServerErrorException(

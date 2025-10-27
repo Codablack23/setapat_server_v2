@@ -15,6 +15,7 @@ export declare class ResizeExtraDto {
 export declare class BriefAttachmentDto {
     type: AttachmentTypes;
     name: string;
+    caption?: string;
     extension: string;
     file_size: number;
     audio_length?: number;

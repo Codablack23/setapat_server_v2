@@ -6,6 +6,8 @@ import { ConversationEntity } from 'src/entities/entity.conversations';
 import { ConversationParticipantEntity } from 'src/entities/entity.participants';
 import { MessageEntity } from 'src/entities/entity.messages';
 import { MessageAttachmentEntity } from 'src/entities/entity.message_attachment';
+import { SocketModule } from 'src/socket/socket.module';
+import { SocketGateway } from 'src/socket/socket.gateway';
 
 @Module({
   imports: [
@@ -14,9 +16,11 @@ import { MessageAttachmentEntity } from 'src/entities/entity.message_attachment'
       ConversationParticipantEntity,
       MessageEntity,
       MessageAttachmentEntity,
+      ConversationParticipantEntity,
     ]),
+    SocketModule,
   ],
   controllers: [ConversationsController],
-  providers: [ConversationsService],
+  providers: [ConversationsService, SocketGateway],
 })
 export class ConversationsModule {}

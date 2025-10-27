@@ -28,6 +28,13 @@ export class OrderBriefAttachmentEntity {
 
   @Column({
     type: 'text',
+    default: '',
+    nullable: false,
+  })
+  caption: string;
+
+  @Column({
+    type: 'text',
     default: 'png',
     nullable: false,
   })

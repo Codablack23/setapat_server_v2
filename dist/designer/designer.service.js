@@ -92,7 +92,6 @@ let DesignerService = class DesignerService {
         });
     }
     async getOrder(userId, orderId) {
-        console.log({ userId, orderId });
         const order = await this.orderRepo.findOne({
             where: {
                 id: orderId,
@@ -137,7 +136,6 @@ let DesignerService = class DesignerService {
         const { conversations, ...orderDetails } = order;
         const conversation = conversations[0];
         const submissions = this.groupLatestSubmissionsByPage(order);
-        console.log({ userId, orderId, submissions, orderDetails });
         return lib_1.AppResponse.getSuccessResponse({
             data: {
                 order: {

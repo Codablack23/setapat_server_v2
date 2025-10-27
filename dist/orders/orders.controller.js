@@ -44,6 +44,9 @@ let OrdersController = class OrdersController {
     addDesignBrief(id, designBriefDto, req) {
         return this.ordersService.addDesignBrief(req.user.id, id, designBriefDto);
     }
+    updateDesignBrief(id, designBriefDto, req) {
+        return this.ordersService.addDesignBrief(req.user.id, id, designBriefDto, true);
+    }
     completePayment(id, req) {
         return this.ordersService.completePayment(id, req.user);
     }
@@ -127,6 +130,15 @@ __decorate([
     __metadata("design:paramtypes", [String, update_order_dto_1.AddDesignBriefDto, Object]),
     __metadata("design:returntype", void 0)
 ], OrdersController.prototype, "addDesignBrief", null);
+__decorate([
+    (0, common_1.Patch)(':id/update-design-brief'),
+    __param(0, (0, common_1.Param)('id')),
+    __param(1, (0, common_1.Body)()),
+    __param(2, (0, common_1.Request)()),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [String, update_order_dto_1.AddDesignBriefDto, Object]),
+    __metadata("design:returntype", void 0)
+], OrdersController.prototype, "updateDesignBrief", null);
 __decorate([
     (0, common_1.Post)(':id/payment/complete'),
     __param(0, (0, common_1.Param)('id')),

@@ -17,6 +17,7 @@ let OrderBriefAttachmentEntity = class OrderBriefAttachmentEntity {
     id;
     type;
     name;
+    caption;
     extension;
     file_size;
     audio_length;
@@ -43,6 +44,14 @@ __decorate([
     }),
     __metadata("design:type", String)
 ], OrderBriefAttachmentEntity.prototype, "name", void 0);
+__decorate([
+    (0, typeorm_1.Column)({
+        type: 'text',
+        default: '',
+        nullable: false,
+    }),
+    __metadata("design:type", String)
+], OrderBriefAttachmentEntity.prototype, "caption", void 0);
 __decorate([
     (0, typeorm_1.Column)({
         type: 'text',

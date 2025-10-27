@@ -75,6 +75,14 @@ export class BriefAttachmentDto {
   @IsString()
   name: string;
 
+  @ApiProperty({
+    example: 'Attachment Description',
+    description: 'Attachment Description',
+  })
+  @IsOptional()
+  @IsString()
+  caption?: string;
+
   @ApiProperty({ example: 'png', description: 'File extension' })
   @IsString()
   extension: string;
@@ -107,6 +115,7 @@ export class AddDesignBriefDto {
     description: 'Brief for the design order',
   })
   @IsString()
+  @IsOptional()
   design_brief: string;
 
   @ApiProperty({

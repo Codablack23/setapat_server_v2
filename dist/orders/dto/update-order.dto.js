@@ -72,6 +72,7 @@ __decorate([
 class BriefAttachmentDto {
     type;
     name;
+    caption;
     extension;
     file_size;
     audio_length;
@@ -91,6 +92,15 @@ __decorate([
     (0, class_validator_1.IsString)(),
     __metadata("design:type", String)
 ], BriefAttachmentDto.prototype, "name", void 0);
+__decorate([
+    (0, swagger_1.ApiProperty)({
+        example: 'Attachment Description',
+        description: 'Attachment Description',
+    }),
+    (0, class_validator_1.IsOptional)(),
+    (0, class_validator_1.IsString)(),
+    __metadata("design:type", String)
+], BriefAttachmentDto.prototype, "caption", void 0);
 __decorate([
     (0, swagger_1.ApiProperty)({ example: 'png', description: 'File extension' }),
     (0, class_validator_1.IsString)(),
@@ -135,6 +145,7 @@ __decorate([
         description: 'Brief for the design order',
     }),
     (0, class_validator_1.IsString)(),
+    (0, class_validator_1.IsOptional)(),
     __metadata("design:type", String)
 ], AddDesignBriefDto.prototype, "design_brief", void 0);
 __decorate([

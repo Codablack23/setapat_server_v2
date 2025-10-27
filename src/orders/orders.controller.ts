@@ -68,6 +68,20 @@ export class OrdersController {
     return this.ordersService.addDesignBrief(req.user.id, id, designBriefDto);
   }
 
+  @Patch(':id/update-design-brief')
+  updateDesignBrief(
+    @Param('id') id: string,
+    @Body() designBriefDto: AddDesignBriefDto,
+    @Request() req: AuthRequest,
+  ) {
+    return this.ordersService.addDesignBrief(
+      req.user.id,
+      id,
+      designBriefDto,
+      true,
+    );
+  }
+
   @Post(':id/payment/complete')
   completePayment(@Param('id') id: string, @Request() req: AuthRequest) {
     return this.ordersService.completePayment(id, req.user);

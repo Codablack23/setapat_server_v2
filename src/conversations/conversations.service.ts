@@ -5,7 +5,7 @@ import {
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { MessageEntity } from 'src/entities/entity.messages';
-import { Repository } from 'typeorm';
+import { In, Repository } from 'typeorm';
 import { ConversationEntity } from 'src/entities/entity.conversations';
 import { MessageAttachmentEntity } from 'src/entities/entity.message_attachment';
 import {
@@ -18,6 +18,8 @@ import {
 } from 'src/lib';
 import { SendMessageDto } from './dto/create-conversation.dto';
 import { UserEntity } from 'src/entities';
+import { SocketGateway } from 'src/socket/socket.gateway';
+import { ConversationParticipantEntity } from 'src/entities/entity.participants';
 
 @Injectable()
 export class ConversationsService {
@@ -28,6 +30,9 @@ export class ConversationsService {
     private conversationRepo: Repository<ConversationEntity>,
     @InjectRepository(MessageAttachmentEntity)
     private messageAttachmentRepo: Repository<MessageAttachmentEntity>,
+    @InjectRepository(ConversationParticipantEntity)
+    private participantRepo: Repository<ConversationParticipantEntity>,
+    private socketGateway: SocketGateway,
   ) {}
 
   async getMessages(userId: string, id: string) {
@@ -115,8 +120,14 @@ export class ConversationsService {
         id,
         participants: {
           status: ParticipantStatus.ACTIVE,
-          user: { id: user.id },
+          user: { id: In([user.id]) },
         },
+      },
+      relations: {
+        participants: {
+          user: true,
+        },
+        order: true,
       },
     });
 
@@ -129,6 +140,17 @@ export class ConversationsService {
         "Sorry you can't send message to a closed conversation",
       );
     }
+
+    const receivers = await this.participantRepo.find({
+      where: {
+        conversation: {
+          id: conversation.id,
+        },
+      },
+      relations: {
+        user: true,
+      },
+    });
 
     // 1. Create the message first
     const newMessage = this.messageRepo.create({
@@ -158,6 +180,27 @@ export class ConversationsService {
       await this.messageRepo.save(message);
     }
 
+    receivers.forEach((item) => {
+      if (item.user.id != user.id) {
+        const type =
+          message.attachments && message.attachments.length > 0
+            ? MessageType.ATTACHMENT
+            : MessageType.TEXT;
+
+        this.socketGateway.emitNewMessage(item.user.id, {
+          message: {
+            order_id: conversation.order?.id,
+            from: user.firstname + ' ' + user.lastname,
+            target: item.user.user_type,
+            content:
+              type == MessageType.ATTACHMENT
+                ? 'New attachment message'
+                : message.content,
+            type,
+          },
+        });
+      }
+    });
     return AppResponse.getSuccessResponse({
       message: 'message sent successfully',
       data: { message },

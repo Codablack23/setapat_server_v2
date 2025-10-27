@@ -20,6 +20,7 @@ import { DesignerModule } from './designer/designer.module';
 import { SupervisorModule } from './supervisor/supervisor.module';
 import { CommonModule } from './common/common.module';
 import { ReceiptModule } from './receipt/receipt.module';
+import { SocketModule } from './socket/socket.module';
 
 @Module({
   imports: [
@@ -48,6 +49,7 @@ import { ReceiptModule } from './receipt/receipt.module';
     SupervisorModule,
     CommonModule,
     ReceiptModule,
+    SocketModule,
   ],
   controllers: [AppController],
   providers: [AppService],

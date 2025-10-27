@@ -15,6 +15,8 @@ const entity_conversations_1 = require("../entities/entity.conversations");
 const entity_participants_1 = require("../entities/entity.participants");
 const entity_messages_1 = require("../entities/entity.messages");
 const entity_message_attachment_1 = require("../entities/entity.message_attachment");
+const socket_module_1 = require("../socket/socket.module");
+const socket_gateway_1 = require("../socket/socket.gateway");
 let ConversationsModule = class ConversationsModule {
 };
 exports.ConversationsModule = ConversationsModule;
@@ -26,10 +28,12 @@ exports.ConversationsModule = ConversationsModule = __decorate([
                 entity_participants_1.ConversationParticipantEntity,
                 entity_messages_1.MessageEntity,
                 entity_message_attachment_1.MessageAttachmentEntity,
+                entity_participants_1.ConversationParticipantEntity,
             ]),
+            socket_module_1.SocketModule,
         ],
         controllers: [conversations_controller_1.ConversationsController],
-        providers: [conversations_service_1.ConversationsService],
+        providers: [conversations_service_1.ConversationsService, socket_gateway_1.SocketGateway],
     })
 ], ConversationsModule);
 //# sourceMappingURL=conversations.module.js.map

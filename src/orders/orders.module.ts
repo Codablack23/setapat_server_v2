@@ -22,6 +22,8 @@ import { ConversationParticipantEntity } from 'src/entities/entity.participants'
 import { MessageEntity } from 'src/entities/entity.messages';
 import { MessageRevisionEntity } from 'src/entities/entity.message_revisions';
 import { SubmissionRevisions } from 'src/entities/entity.revisions';
+import { SocketModule } from 'src/socket/socket.module';
+import { SocketGateway } from 'src/socket/socket.gateway';
 
 @Module({
   imports: [
@@ -44,8 +46,9 @@ import { SubmissionRevisions } from 'src/entities/entity.revisions';
       SubmissionRevisions,
       MessageRevisionEntity,
     ]),
+    SocketModule,
   ],
   controllers: [OrdersController],
-  providers: [OrdersService, OrdersUtil],
+  providers: [OrdersService, OrdersUtil, SocketGateway],
 })
 export class OrdersModule {}

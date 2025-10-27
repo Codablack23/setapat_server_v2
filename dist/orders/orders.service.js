@@ -13,6 +13,7 @@ var __param = (this && this.__param) || function (paramIndex, decorator) {
 };
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.OrdersService = void 0;
+const socket_gateway_1 = require("./../socket/socket.gateway");
 const entity_messages_1 = require("../entities/entity.messages");
 const entity_message_revisions_1 = require("../entities/entity.message_revisions");
 const entity_conversations_1 = require("../entities/entity.conversations");
@@ -53,7 +54,8 @@ let OrdersService = class OrdersService {
     messageRepo;
     submissionRevisionRepo;
     participantsRepo;
-    constructor(orderUtil, orderRepository, dataSource, orderPageRepository, orderAssignmentRepo, designerRepo, orderBriefAttachmentRepo, orderResizeExtraRepo, notificationRepo, orderSubmissionRepo, orderReviewRepo, orderReceiptRepo, orderEditRepo, orderEditPageRepo, conversationRepo, messageRepo, submissionRevisionRepo, participantsRepo) {
+    socketGateway;
+    constructor(orderUtil, orderRepository, dataSource, orderPageRepository, orderAssignmentRepo, designerRepo, orderBriefAttachmentRepo, orderResizeExtraRepo, notificationRepo, orderSubmissionRepo, orderReviewRepo, orderReceiptRepo, orderEditRepo, orderEditPageRepo, conversationRepo, messageRepo, submissionRevisionRepo, participantsRepo, socketGateway) {
         this.orderUtil = orderUtil;
         this.orderRepository = orderRepository;
         this.dataSource = dataSource;
@@ -72,6 +74,7 @@ let OrdersService = class OrdersService {
         this.messageRepo = messageRepo;
         this.submissionRevisionRepo = submissionRevisionRepo;
         this.participantsRepo = participantsRepo;
+        this.socketGateway = socketGateway;
     }
     async reviewOrder(userId, id, dto) {
         const order = await this.orderRepository.findOne({
@@ -88,7 +91,7 @@ let OrdersService = class OrdersService {
         if (!order)
             throw new common_1.NotFoundException(lib_1.AppResponse.getFailedResponse('Order could not be found'));
         if (order.reviews.length > 0)
-            throw new common_1.ForbiddenException(lib_1.AppResponse.getFailedResponse('You have already added a  review for this order'));
+            throw new common_1.ForbiddenException(lib_1.AppResponse.getFailedResponse('You have already added a review for this order'));
         const review = this.orderReviewRepo.create({
             ...dto,
             order,
@@ -223,6 +226,7 @@ let OrdersService = class OrdersService {
             const messageRevisions = this.createMessageRevisions(newMessage, existingRevisions, savedSubmissions);
             await messageRevisionRepo.save(messageRevisions);
         });
+        this.socketGateway.emitNewMessage(order.user.id);
         this.sendSubmissionNotification(order.user, order).catch((err) => console.error(`Failed to send submission notification for order ${order.order_id}`, err.stack));
         return lib_1.AppResponse.getSuccessResponse({
             message: 'Submissions added successfully',
@@ -571,6 +575,7 @@ let OrdersService = class OrdersService {
     }
     async sendNewOrderNotification(user, order) {
         const description = `Hi ${user.firstname}, your order has been received. View order to track progress. Thank you for choosing us!`;
+        const caption = 'Order is Received!';
         const newNotification = this.notificationRepo.create({
             user,
             type: notifications_types_1.NotificationTypes.ORDER,
@@ -581,8 +586,12 @@ let OrdersService = class OrdersService {
         await this.notificationRepo.save(newNotification);
         await providers_1.MailerProvider.sendMail({
             to: user.email,
-            subject: 'Order is Received!',
+            subject: caption,
             html: `<p>${description}</p>`,
+        });
+        this.socketGateway.emitNewNotification(user.id, {
+            caption,
+            description,
         });
     }
     async sendRevisionCountNotification(user, order) {
@@ -601,6 +610,10 @@ let OrdersService = class OrdersService {
             subject: caption,
             html: `<p>${description}</p>`,
         });
+        this.socketGateway.emitNewNotification(user.id, {
+            caption,
+            description,
+        });
     }
     async sendSubmissionNotification(user, order) {
         const caption = 'Order Is Ready!';
@@ -618,6 +631,10 @@ let OrdersService = class OrdersService {
             subject: caption,
             html: `<p>${description}</p>`,
         });
+        this.socketGateway.emitNewNotification(user.id, {
+            caption,
+            description,
+        });
     }
     async sendEditReceievedNotification(user, order) {
         const caption = 'Order Edit/Revision Is Received!';
@@ -634,6 +651,10 @@ let OrdersService = class OrdersService {
             to: user.email,
             subject: caption,
             html: `<p>${description}</p>`,
+        });
+        this.socketGateway.emitNewNotification(user.id, {
+            caption,
+            description,
         });
     }
     async sendCompletionNotification(user, order, userType = lib_1.UserType.USER) {
@@ -653,6 +674,10 @@ let OrdersService = class OrdersService {
             to: user.email,
             subject: caption,
             html: `<p>${description}</p>`,
+        });
+        this.socketGateway.emitNewNotification(user.id, {
+            caption,
+            description,
         });
     }
     async findAll(user) {
@@ -913,7 +938,13 @@ let OrdersService = class OrdersService {
             message: 'Order deleted successfully',
         });
     }
-    async addDesignBrief(userId, id, addDesignBriefDto) {
+    async addDesignBrief(userId, id, addDesignBriefDto, ignoreBriefAttachmentCheck = false) {
+        if (!ignoreBriefAttachmentCheck &&
+            !addDesignBriefDto.design_brief &&
+            (!addDesignBriefDto.brief_attachments ||
+                addDesignBriefDto.brief_attachments.length === 0)) {
+            throw new common_1.BadRequestException(lib_1.AppResponse.getFailedResponse('Either a design brief or at least one attachment is required.'));
+        }
         const orderCheck = await this.orderRepository.findOne({
             where: { id, user: { id: userId } },
             relations: ['pages', 'pages.page_resizes', 'brief_attachments'],
@@ -974,6 +1005,7 @@ let OrdersService = class OrdersService {
             return result;
         }
         catch (err) {
+            console.log(err);
             if (err instanceof common_1.HttpException)
                 throw err;
             throw new common_1.InternalServerErrorException(lib_1.AppResponse.getFailedResponse('Failed to add design brief'));
@@ -1016,6 +1048,7 @@ exports.OrdersService = OrdersService = __decorate([
         typeorm_2.Repository,
         typeorm_2.Repository,
         typeorm_2.Repository,
-        typeorm_2.Repository])
+        typeorm_2.Repository,
+        socket_gateway_1.SocketGateway])
 ], OrdersService);
 //# sourceMappingURL=orders.service.js.map

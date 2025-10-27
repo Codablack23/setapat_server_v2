@@ -5,11 +5,15 @@ import { MessageAttachmentEntity } from 'src/entities/entity.message_attachment'
 import { MessageType, RevisionPerPage } from 'src/lib';
 import { SendMessageDto } from './dto/create-conversation.dto';
 import { UserEntity } from 'src/entities';
+import { SocketGateway } from 'src/socket/socket.gateway';
+import { ConversationParticipantEntity } from 'src/entities/entity.participants';
 export declare class ConversationsService {
     private messageRepo;
     private conversationRepo;
     private messageAttachmentRepo;
-    constructor(messageRepo: Repository<MessageEntity>, conversationRepo: Repository<ConversationEntity>, messageAttachmentRepo: Repository<MessageAttachmentEntity>);
+    private participantRepo;
+    private socketGateway;
+    constructor(messageRepo: Repository<MessageEntity>, conversationRepo: Repository<ConversationEntity>, messageAttachmentRepo: Repository<MessageAttachmentEntity>, participantRepo: Repository<ConversationParticipantEntity>, socketGateway: SocketGateway);
     getMessages(userId: string, id: string): Promise<{
         status: "failed" | "success";
         message: string;

@@ -25,6 +25,8 @@ const entity_participants_1 = require("../entities/entity.participants");
 const entity_messages_1 = require("../entities/entity.messages");
 const entity_message_revisions_1 = require("../entities/entity.message_revisions");
 const entity_revisions_1 = require("../entities/entity.revisions");
+const socket_module_1 = require("../socket/socket.module");
+const socket_gateway_1 = require("../socket/socket.gateway");
 let OrdersModule = class OrdersModule {
 };
 exports.OrdersModule = OrdersModule;
@@ -50,9 +52,10 @@ exports.OrdersModule = OrdersModule = __decorate([
                 entity_revisions_1.SubmissionRevisions,
                 entity_message_revisions_1.MessageRevisionEntity,
             ]),
+            socket_module_1.SocketModule,
         ],
         controllers: [orders_controller_1.OrdersController],
-        providers: [orders_service_1.OrdersService, lib_1.OrdersUtil],
+        providers: [orders_service_1.OrdersService, lib_1.OrdersUtil, socket_gateway_1.SocketGateway],
     })
 ], OrdersModule);
 //# sourceMappingURL=orders.module.js.map
