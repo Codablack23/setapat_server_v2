@@ -599,6 +599,16 @@ export class OrdersService {
   }
 
   async commenceOrder(userId: string, id: string) {
+    const order = await this.orderRepository.findOne({
+      where: { id },
+    });
+
+    if (!order) {
+      throw new UnauthorizedException(
+        AppResponse.getFailedResponse('Order not found'),
+      );
+    }
+
     const designer = await this.designerRepo.findOne({
       where: { user: { id: userId } },
       relations: { user: true },
@@ -656,7 +666,10 @@ export class OrdersService {
     }
 
     orderAssignment.status = OrderAssignmentStatus.ACCEPTED;
+    order.commenced_at = new Date();
+
     await this.orderAssignmentRepo.save(orderAssignment);
+    await this.orderRepository.save(order);
 
     this.sendCommencementNotification(
       orderAssignment.order.user,
@@ -1119,7 +1132,9 @@ export class OrdersService {
         order_edits: {
           pages: true,
         },
+        receipts: true,
         submissions: true,
+        reviews: true,
         conversations: true,
         discount: {
           discount: true,
@@ -1286,7 +1301,7 @@ export class OrdersService {
     const receipt = this.orderReceiptRepo.create({
       order,
     });
-    await this.orderReceiptRepo.save(order);
+    await this.orderReceiptRepo.save(receipt);
     return AppResponse.getSuccessResponse({
       message: 'Receipt generated successfully',
     });

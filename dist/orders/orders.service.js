@@ -352,6 +352,12 @@ let OrdersService = class OrdersService {
         });
     }
     async commenceOrder(userId, id) {
+        const order = await this.orderRepository.findOne({
+            where: { id },
+        });
+        if (!order) {
+            throw new common_1.UnauthorizedException(lib_1.AppResponse.getFailedResponse('Order not found'));
+        }
         const designer = await this.designerRepo.findOne({
             where: { user: { id: userId } },
             relations: { user: true },
@@ -388,7 +394,9 @@ let OrdersService = class OrdersService {
             throw new common_1.ConflictException(lib_1.AppResponse.getFailedResponse('Sorry you can no longer proceed with this order, it has been reassigned'));
         }
         orderAssignment.status = lib_1.OrderAssignmentStatus.ACCEPTED;
+        order.commenced_at = new Date();
         await this.orderAssignmentRepo.save(orderAssignment);
+        await this.orderRepository.save(order);
         this.sendCommencementNotification(orderAssignment.order.user, orderAssignment.order).catch((err) => {
             console.error(`Failed to send assignment notification for order ${orderAssignment.order.order_id}:`, err);
         });
@@ -731,7 +739,9 @@ let OrdersService = class OrdersService {
                 order_edits: {
                     pages: true,
                 },
+                receipts: true,
                 submissions: true,
+                reviews: true,
                 conversations: true,
                 discount: {
                     discount: true,
@@ -853,7 +863,7 @@ let OrdersService = class OrdersService {
         const receipt = this.orderReceiptRepo.create({
             order,
         });
-        await this.orderReceiptRepo.save(order);
+        await this.orderReceiptRepo.save(receipt);
         return lib_1.AppResponse.getSuccessResponse({
             message: 'Receipt generated successfully',
         });
