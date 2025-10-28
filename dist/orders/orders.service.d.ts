@@ -166,6 +166,7 @@ export declare class OrdersService {
                 conversation: ConversationEntity;
                 status: OrderStatus;
                 active_edit: OrderEditEntity | undefined;
+                last_submitted_at: Date;
                 submissions: OrderSubmissions;
                 id: string;
                 design_class: import("src/lib").DesignClass;

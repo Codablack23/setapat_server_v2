@@ -13,6 +13,15 @@ export enum DiscountType {
   PERCENTAGE = 'PERCENTAGE',
   FLAT = 'FLAT',
 }
+export enum DiscountCycleType {
+  HOURLY = 'HOURLY',
+  DAILY = 'DAILY',
+  WEEKLY = 'WEEKLY',
+  MONTHLY = 'MONTHLY',
+  QUARTERLY = 'QUARTERLY',
+  YEARLY = 'YEARLY',
+  NONE = 'NONE',
+}
 
 @Entity({ name: 'discounts' })
 export class DiscountEntity {
@@ -25,6 +34,13 @@ export class DiscountEntity {
     default: DiscountType.PERCENTAGE,
   })
   type: DiscountType;
+
+  @Column({
+    type: 'enum',
+    enum: DiscountCycleType,
+    default: DiscountCycleType.NONE,
+  })
+  cycle_type: DiscountCycleType;
 
   @Index({ unique: true })
   @Column({ type: 'varchar', length: 20 })

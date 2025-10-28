@@ -1,9 +1,15 @@
 import { Injectable, BadRequestException } from '@nestjs/common';
-import { DiscountEntity, DiscountType } from '../../entities/entity.discount';
+import {
+  DiscountCycleType,
+  DiscountEntity,
+  DiscountType,
+} from '../../entities/entity.discount';
 import { AppResponse } from '../index'; // adjust path
 import { CreateDiscountDto } from 'src/discounts/dto/create-discount.dto';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
+import { UsedDiscountEntity } from 'src/entities/entity.used_discount';
+import { DateTime } from 'luxon';
 
 @Injectable()
 export class DiscountUtils {
@@ -16,21 +22,91 @@ export class DiscountUtils {
   static validateDiscount(
     discount: DiscountEntity,
     totalUsed?: number,
+    usedDiscounts?: UsedDiscountEntity[],
   ): DiscountEntity {
     if (!discount.is_active) {
       throw new BadRequestException(
-        AppResponse.getFailedResponse('Discount is not active'),
+        AppResponse.getFailedResponse('Voucher is not active'),
       );
     }
+
+    const filteredUsedDisounts = this.getUsedDiscountsPerCycle(
+      discount.cycle_type,
+      usedDiscounts,
+    );
+
+    const totalAmountDiscounted = filteredUsedDisounts.reduce(
+      (acc, item) => acc + item.amount,
+      0,
+    );
 
     const now = new Date();
 
     this.ensureWithinStartAndExpiry(discount, now);
     this.ensureActiveDays(discount, now);
     this.ensureActiveTime(discount, now);
-    this.ensureMaxUse(discount, totalUsed);
+
+    if (discount.type == DiscountType.FLAT) {
+      if (discount.amount - totalAmountDiscounted == 0) {
+        throw new BadRequestException(
+          AppResponse.getFailedResponse('This voucher balance is 0'),
+        );
+      }
+    } else {
+      this.ensureMaxUse(discount, totalUsed);
+    }
 
     return discount;
+  }
+
+  static getUsedDiscountsPerCycle(
+    cycle: DiscountCycleType = DiscountCycleType.NONE,
+    usedDiscounts: UsedDiscountEntity[] = [],
+  ): UsedDiscountEntity[] {
+    const now = DateTime.now();
+
+    // For non-cyclic discounts, return all
+    if (cycle === DiscountCycleType.NONE) return usedDiscounts;
+
+    // Determine cycle start based on cycle type
+    let cycleStart: DateTime;
+    switch (cycle) {
+      case DiscountCycleType.HOURLY:
+        cycleStart = now.startOf('hour');
+        break;
+      case DiscountCycleType.DAILY:
+        cycleStart = now.startOf('day');
+        break;
+      case DiscountCycleType.WEEKLY:
+        cycleStart = now.startOf('week');
+        break;
+      case DiscountCycleType.MONTHLY:
+        cycleStart = now.startOf('month');
+        break;
+      case DiscountCycleType.QUARTERLY:
+        cycleStart = now.startOf('quarter');
+        break;
+      case DiscountCycleType.YEARLY:
+        cycleStart = now.startOf('year');
+        break;
+      default:
+        cycleStart = DateTime.fromISO('1900-01-01T00:00:00Z');
+        break;
+    }
+
+    // Filter by created_at within current cycle
+    return usedDiscounts.filter((item) => {
+      const usedAt = DateTime.fromJSDate(new Date(item.created_at));
+      return usedAt >= cycleStart;
+    });
+  }
+
+  static getUsedDiscountsPerCycleAmount(
+    cycle: DiscountCycleType = DiscountCycleType.NONE,
+    usedDiscounts: UsedDiscountEntity[] = [],
+  ): number {
+    const filtered = this.getUsedDiscountsPerCycle(cycle, usedDiscounts);
+    return filtered.reduce((acc, item) => acc + item.amount, 0);
   }
 
   /**
@@ -147,12 +223,12 @@ export class DiscountUtils {
   ) {
     if (discount.starts_at && now < discount.starts_at) {
       throw new BadRequestException(
-        AppResponse.getFailedResponse('Discount has not started yet'),
+        AppResponse.getFailedResponse('Voucher can not be applied yet'),
       );
     }
     if (discount.expires_at && now > discount.expires_at) {
       throw new BadRequestException(
-        AppResponse.getFailedResponse('Discount expired'),
+        AppResponse.getFailedResponse('Voucher Expired!'),
       );
     }
   }

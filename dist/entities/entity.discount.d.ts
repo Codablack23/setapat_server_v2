@@ -3,9 +3,19 @@ export declare enum DiscountType {
     PERCENTAGE = "PERCENTAGE",
     FLAT = "FLAT"
 }
+export declare enum DiscountCycleType {
+    HOURLY = "HOURLY",
+    DAILY = "DAILY",
+    WEEKLY = "WEEKLY",
+    MONTHLY = "MONTHLY",
+    QUARTERLY = "QUARTERLY",
+    YEARLY = "YEARLY",
+    NONE = "NONE"
+}
 export declare class DiscountEntity {
     id: string;
     type: DiscountType;
+    cycle_type: DiscountCycleType;
     code: string;
     description: string;
     duration_hours: number;

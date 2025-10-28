@@ -66,6 +66,7 @@ export declare class OrdersController {
                 conversation: import("../entities/entity.conversations").ConversationEntity;
                 status: import("src/lib").OrderStatus;
                 active_edit: import("../entities/entity.order_edits").OrderEditEntity | undefined;
+                last_submitted_at: Date;
                 submissions: import("src/lib").OrderSubmissions;
                 id: string;
                 design_class: import("src/lib").DesignClass;

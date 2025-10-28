@@ -46,12 +46,20 @@ let DiscountsService = class DiscountsService {
             },
         });
         if (!discount) {
-            throw new common_1.NotFoundException(lib_1.AppResponse.getFailedResponse('Voucher does not exist'));
+            throw new common_1.NotFoundException(lib_1.AppResponse.getFailedResponse('Voucher Not Found!'));
         }
         const voucher = util_discount_1.DiscountUtils.validateDiscount(discount, discount.used_discounts.length);
+        const used_discount_amount = util_discount_1.DiscountUtils.getUsedDiscountsPerCycleAmount(voucher.cycle_type, discount.used_discounts);
+        const used_discounts = util_discount_1.DiscountUtils.getUsedDiscountsPerCycle(discount.cycle_type, voucher.used_discounts);
         return lib_1.AppResponse.getSuccessResponse({
             message: 'voucher retrieved successfully',
-            data: { voucher },
+            data: {
+                voucher: {
+                    ...voucher,
+                    used_discount_amount,
+                    used_discounts,
+                },
+            },
         });
     }
     async applyDiscount(code, applyDiscountDto) {
@@ -66,7 +74,7 @@ let DiscountsService = class DiscountsService {
         if (!discount) {
             throw new common_1.NotFoundException(lib_1.AppResponse.getFailedResponse('Voucher does not exist'));
         }
-        const voucher = util_discount_1.DiscountUtils.validateDiscount(discount, discount.used_discounts.length);
+        const voucher = util_discount_1.DiscountUtils.validateDiscount(discount, discount.used_discounts.length, discount.used_discounts);
         const usedVoucher = await this.usedDiscountRepo.findOne({
             where: {
                 discount: {
@@ -90,7 +98,7 @@ let DiscountsService = class DiscountsService {
         }
         const usedDiscount = this.usedDiscountRepo.create({
             discount,
-            amount: discount.amount,
+            amount: order.amount,
         });
         const orderDiscount = await this.usedDiscountRepo.save(usedDiscount);
         order.discount = orderDiscount;

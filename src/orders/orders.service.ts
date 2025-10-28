@@ -1161,6 +1161,9 @@ export class OrdersService {
 
     const conversation = conversations[0];
     const submissions = this.groupLatestSubmissionsByPage(order);
+    const latestSubmission = order.submissions.sort(
+      (a, b) => a.created_at.getTime() - b.created_at.getTime(),
+    );
 
     const response = AppResponse.getResponse('success', {
       data: {
@@ -1170,6 +1173,7 @@ export class OrdersService {
           conversation,
           status: activeEdit ? OrderStatus.EDIT : order.status,
           active_edit: activeEdit,
+          last_submitted_at: latestSubmission[0]?.created_at,
           submissions,
         },
       },

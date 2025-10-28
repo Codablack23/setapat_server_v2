@@ -9,7 +9,7 @@ var __metadata = (this && this.__metadata) || function (k, v) {
     if (typeof Reflect === "object" && typeof Reflect.metadata === "function") return Reflect.metadata(k, v);
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.DiscountEntity = exports.DiscountType = void 0;
+exports.DiscountEntity = exports.DiscountCycleType = exports.DiscountType = void 0;
 const typeorm_1 = require("typeorm");
 const entity_used_discount_1 = require("./entity.used_discount");
 var DiscountType;
@@ -17,9 +17,20 @@ var DiscountType;
     DiscountType["PERCENTAGE"] = "PERCENTAGE";
     DiscountType["FLAT"] = "FLAT";
 })(DiscountType || (exports.DiscountType = DiscountType = {}));
+var DiscountCycleType;
+(function (DiscountCycleType) {
+    DiscountCycleType["HOURLY"] = "HOURLY";
+    DiscountCycleType["DAILY"] = "DAILY";
+    DiscountCycleType["WEEKLY"] = "WEEKLY";
+    DiscountCycleType["MONTHLY"] = "MONTHLY";
+    DiscountCycleType["QUARTERLY"] = "QUARTERLY";
+    DiscountCycleType["YEARLY"] = "YEARLY";
+    DiscountCycleType["NONE"] = "NONE";
+})(DiscountCycleType || (exports.DiscountCycleType = DiscountCycleType = {}));
 let DiscountEntity = class DiscountEntity {
     id;
     type;
+    cycle_type;
     code;
     description;
     duration_hours = 24;
@@ -50,6 +61,14 @@ __decorate([
     }),
     __metadata("design:type", String)
 ], DiscountEntity.prototype, "type", void 0);
+__decorate([
+    (0, typeorm_1.Column)({
+        type: 'enum',
+        enum: DiscountCycleType,
+        default: DiscountCycleType.NONE,
+    }),
+    __metadata("design:type", String)
+], DiscountEntity.prototype, "cycle_type", void 0);
 __decorate([
     (0, typeorm_1.Index)({ unique: true }),
     (0, typeorm_1.Column)({ type: 'varchar', length: 20 }),

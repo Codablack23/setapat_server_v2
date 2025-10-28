@@ -18,18 +18,65 @@ const entity_discount_1 = require("../../entities/entity.discount");
 const index_1 = require("../index");
 const typeorm_1 = require("@nestjs/typeorm");
 const typeorm_2 = require("typeorm");
+const luxon_1 = require("luxon");
 let DiscountUtils = class DiscountUtils {
     constructor() { }
-    static validateDiscount(discount, totalUsed) {
+    static validateDiscount(discount, totalUsed, usedDiscounts) {
         if (!discount.is_active) {
-            throw new common_1.BadRequestException(index_1.AppResponse.getFailedResponse('Discount is not active'));
+            throw new common_1.BadRequestException(index_1.AppResponse.getFailedResponse('Voucher is not active'));
         }
+        const filteredUsedDisounts = this.getUsedDiscountsPerCycle(discount.cycle_type, usedDiscounts);
+        const totalAmountDiscounted = filteredUsedDisounts.reduce((acc, item) => acc + item.amount, 0);
         const now = new Date();
         this.ensureWithinStartAndExpiry(discount, now);
         this.ensureActiveDays(discount, now);
         this.ensureActiveTime(discount, now);
-        this.ensureMaxUse(discount, totalUsed);
+        if (discount.type == entity_discount_1.DiscountType.FLAT) {
+            if (discount.amount - totalAmountDiscounted == 0) {
+                throw new common_1.BadRequestException(index_1.AppResponse.getFailedResponse('This voucher balance is 0'));
+            }
+        }
+        else {
+            this.ensureMaxUse(discount, totalUsed);
+        }
         return discount;
+    }
+    static getUsedDiscountsPerCycle(cycle = entity_discount_1.DiscountCycleType.NONE, usedDiscounts = []) {
+        const now = luxon_1.DateTime.now();
+        if (cycle === entity_discount_1.DiscountCycleType.NONE)
+            return usedDiscounts;
+        let cycleStart;
+        switch (cycle) {
+            case entity_discount_1.DiscountCycleType.HOURLY:
+                cycleStart = now.startOf('hour');
+                break;
+            case entity_discount_1.DiscountCycleType.DAILY:
+                cycleStart = now.startOf('day');
+                break;
+            case entity_discount_1.DiscountCycleType.WEEKLY:
+                cycleStart = now.startOf('week');
+                break;
+            case entity_discount_1.DiscountCycleType.MONTHLY:
+                cycleStart = now.startOf('month');
+                break;
+            case entity_discount_1.DiscountCycleType.QUARTERLY:
+                cycleStart = now.startOf('quarter');
+                break;
+            case entity_discount_1.DiscountCycleType.YEARLY:
+                cycleStart = now.startOf('year');
+                break;
+            default:
+                cycleStart = luxon_1.DateTime.fromISO('1900-01-01T00:00:00Z');
+                break;
+        }
+        return usedDiscounts.filter((item) => {
+            const usedAt = luxon_1.DateTime.fromJSDate(new Date(item.created_at));
+            return usedAt >= cycleStart;
+        });
+    }
+    static getUsedDiscountsPerCycleAmount(cycle = entity_discount_1.DiscountCycleType.NONE, usedDiscounts = []) {
+        const filtered = this.getUsedDiscountsPerCycle(cycle, usedDiscounts);
+        return filtered.reduce((acc, item) => acc + item.amount, 0);
     }
     static ensureFieldsForCreation(dto) {
         const hasActiveDays = dto.active_days && dto.active_days.length > 0;
@@ -95,10 +142,10 @@ let DiscountUtils = class DiscountUtils {
     }
     static ensureWithinStartAndExpiry(discount, now) {
         if (discount.starts_at && now < discount.starts_at) {
-            throw new common_1.BadRequestException(index_1.AppResponse.getFailedResponse('Discount has not started yet'));
+            throw new common_1.BadRequestException(index_1.AppResponse.getFailedResponse('Voucher can not be applied yet'));
         }
         if (discount.expires_at && now > discount.expires_at) {
-            throw new common_1.BadRequestException(index_1.AppResponse.getFailedResponse('Discount expired'));
+            throw new common_1.BadRequestException(index_1.AppResponse.getFailedResponse('Voucher Expired!'));
         }
     }
     static ensureActiveDays(discount, now) {

@@ -46,7 +46,7 @@ export class DiscountsService {
     });
     if (!discount) {
       throw new NotFoundException(
-        AppResponse.getFailedResponse('Voucher does not exist'),
+        AppResponse.getFailedResponse('Voucher Not Found!'),
       );
     }
 
@@ -54,9 +54,26 @@ export class DiscountsService {
       discount,
       discount.used_discounts.length,
     );
+
+    const used_discount_amount = DiscountUtils.getUsedDiscountsPerCycleAmount(
+      voucher.cycle_type,
+      discount.used_discounts,
+    );
+
+    const used_discounts = DiscountUtils.getUsedDiscountsPerCycle(
+      discount.cycle_type,
+      voucher.used_discounts,
+    );
+
     return AppResponse.getSuccessResponse({
       message: 'voucher retrieved successfully',
-      data: { voucher },
+      data: {
+        voucher: {
+          ...voucher,
+          used_discount_amount,
+          used_discounts,
+        },
+      },
     });
   }
   async applyDiscount(code: string, applyDiscountDto: ApplyDiscountDto) {
@@ -77,6 +94,7 @@ export class DiscountsService {
     const voucher = DiscountUtils.validateDiscount(
       discount,
       discount.used_discounts.length,
+      discount.used_discounts,
     );
 
     const usedVoucher = await this.usedDiscountRepo.findOne({
@@ -112,7 +130,7 @@ export class DiscountsService {
 
     const usedDiscount = this.usedDiscountRepo.create({
       discount,
-      amount: discount.amount,
+      amount: order.amount,
     });
 
     const orderDiscount = await this.usedDiscountRepo.save(usedDiscount);
