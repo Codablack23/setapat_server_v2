@@ -83,10 +83,14 @@ export class DesignerService {
     });
 
     const orders = ordersRes.map((item) => {
+      const activeEdit = item.order_edits.find(
+        (item) => item.status == OrderEditStatus.IN_PROGRESS,
+      );
       const submissions = this.groupLatestSubmissionsByPage(item);
       return {
         ...item,
         submissions,
+        status: activeEdit ? OrderStatus.EDIT : item.status,
       };
     });
 
@@ -140,9 +144,15 @@ export class DesignerService {
           'Sorry the order you are looking for does not exist or may have been deleted',
       });
 
+    const activeEdit = order.order_edits.find(
+      (item) => item.status == OrderEditStatus.IN_PROGRESS,
+    );
     const { conversations, ...orderDetails } = order;
     const conversation = conversations[0];
     const submissions = this.groupLatestSubmissionsByPage(order);
+    const latestSubmission = order.submissions.sort(
+      (a, b) => a.created_at.getTime() - b.created_at.getTime(),
+    );
 
     return AppResponse.getSuccessResponse({
       data: {
@@ -150,6 +160,9 @@ export class DesignerService {
           ...orderDetails,
           conversation,
           submissions,
+          active_edit: activeEdit,
+          status: activeEdit ? OrderStatus.EDIT : order.status,
+          last_submitted_at: latestSubmission[0]?.created_at,
         },
       },
       message: 'Order retrieved successfully',

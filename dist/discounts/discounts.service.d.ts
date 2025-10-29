@@ -12,7 +12,7 @@ export declare class DiscountsService {
     create(createDiscountDto: CreateDiscountDto): string;
     findAll(): string;
     findOne(code: string): Promise<{
-        status: "success" | "failed";
+        status: "failed" | "success";
         message: string;
         data: {
             voucher: {
@@ -40,7 +40,7 @@ export declare class DiscountsService {
         } | undefined;
     }>;
     applyDiscount(code: string, applyDiscountDto: ApplyDiscountDto): Promise<{
-        status: "success" | "failed";
+        status: "failed" | "success";
         message: string;
         data: {
             voucher: DiscountEntity;

@@ -7,19 +7,22 @@ export declare class DesignerService {
     constructor(orderRepo: Repository<OrderEntity>);
     private sortOrders;
     getOrders(userId: string, query?: OrdersQuery): Promise<{
-        status: "failed" | "success";
+        status: "success" | "failed";
         message: string;
         data: {
             orders: OrderEntity[];
         } | undefined;
     }>;
     getOrder(userId: string, orderId: string): Promise<{
-        status: "failed" | "success";
+        status: "success" | "failed";
         message: string;
         data: {
             order: {
                 conversation: import("../entities/entity.conversations").ConversationEntity;
                 submissions: OrderSubmissions;
+                active_edit: import("../entities/entity.order_edits").OrderEditEntity | undefined;
+                status: OrderStatus;
+                last_submitted_at: Date;
                 id: string;
                 design_class: import("src/lib").DesignClass;
                 order_id: string;
@@ -31,7 +34,6 @@ export declare class DesignerService {
                 design_assets?: any;
                 design_preferences?: any;
                 design_samples?: any;
-                status: OrderStatus;
                 amount: number;
                 delivery_time: number;
                 confidential: boolean;

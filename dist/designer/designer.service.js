@@ -80,10 +80,12 @@ let DesignerService = class DesignerService {
             order: { created_at: 'DESC' },
         });
         const orders = ordersRes.map((item) => {
+            const activeEdit = item.order_edits.find((item) => item.status == lib_1.OrderEditStatus.IN_PROGRESS);
             const submissions = this.groupLatestSubmissionsByPage(item);
             return {
                 ...item,
                 submissions,
+                status: activeEdit ? lib_1.OrderStatus.EDIT : item.status,
             };
         });
         return lib_1.AppResponse.getSuccessResponse({
@@ -133,15 +135,20 @@ let DesignerService = class DesignerService {
                 status: 'failed',
                 message: 'Sorry the order you are looking for does not exist or may have been deleted',
             });
+        const activeEdit = order.order_edits.find((item) => item.status == lib_1.OrderEditStatus.IN_PROGRESS);
         const { conversations, ...orderDetails } = order;
         const conversation = conversations[0];
         const submissions = this.groupLatestSubmissionsByPage(order);
+        const latestSubmission = order.submissions.sort((a, b) => a.created_at.getTime() - b.created_at.getTime());
         return lib_1.AppResponse.getSuccessResponse({
             data: {
                 order: {
                     ...orderDetails,
                     conversation,
                     submissions,
+                    active_edit: activeEdit,
+                    status: activeEdit ? lib_1.OrderStatus.EDIT : order.status,
+                    last_submitted_at: latestSubmission[0]?.created_at,
                 },
             },
             message: 'Order retrieved successfully',

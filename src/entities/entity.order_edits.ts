@@ -31,6 +31,21 @@ export class OrderEditEntity {
     @CreateDateColumn()
     created_at: Date
     
+    @Column("int",{default:4})
+    delivery_time:number = 4
+
+    @Column({
+        type: 'int',
+        transformer: {
+            to: (value: number) => Math.round(value * 100), // multiply by 100 before save
+            from: (value: string) => Number(value) / 100,   // divide by 100 when reading
+        },
+    })
+    amount: number
+    
+    @Column("datetime")
+    delivery_date: Date
+    
     @CreateDateColumn()
     completed_at: Date
 

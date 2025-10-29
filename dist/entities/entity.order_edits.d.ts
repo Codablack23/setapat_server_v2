@@ -7,6 +7,9 @@ export declare class OrderEditEntity {
     id: string;
     status: OrderEditStatus;
     created_at: Date;
+    delivery_time: number;
+    amount: number;
+    delivery_date: Date;
     completed_at: Date;
     updated_at: Date;
     order: OrderEntity;

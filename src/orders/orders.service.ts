@@ -226,8 +226,25 @@ export class OrdersService {
       );
     }
 
+    const delivery_date = DateTime.now().plus({ hours: 4 });
+
+    const amount = dto.pages.reduce(
+      (acc, item) =>
+        acc +
+        item.price * (item.revisions ?? 1) +
+        (item.page_resizes?.reduce(
+          (resizeAcc, resizeItem) => resizeAcc + resizeItem.amount,
+          0,
+        ) ?? 0),
+      0,
+    );
+
     // Create the parent edit
-    const orderEdit = this.orderEditRepo.create({ order });
+    const orderEdit = this.orderEditRepo.create({
+      order,
+      delivery_date,
+      amount,
+    });
     const savedOrderEdit = await this.orderEditRepo.save(orderEdit);
 
     // Create pages + resizes
@@ -250,7 +267,7 @@ export class OrdersService {
             this.orderResizeExtraRepo.create({
               ...pageResize,
               order_page: orderPage,
-              price: 100000,
+              price: 1000,
               order,
               edit_page: newEditPage,
             }),

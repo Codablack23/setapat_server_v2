@@ -144,7 +144,15 @@ let OrdersService = class OrdersService {
         if (activeEdits.length > 0) {
             throw new common_1.ForbiddenException(lib_1.AppResponse.getFailedResponse('Sorry you can only make one edit at a time, please close out all pending edit before proceeding'));
         }
-        const orderEdit = this.orderEditRepo.create({ order });
+        const delivery_date = luxon_1.DateTime.now().plus({ hours: 4 });
+        const amount = dto.pages.reduce((acc, item) => acc +
+            item.price * (item.revisions ?? 1) +
+            (item.page_resizes?.reduce((resizeAcc, resizeItem) => resizeAcc + resizeItem.amount, 0) ?? 0), 0);
+        const orderEdit = this.orderEditRepo.create({
+            order,
+            delivery_date,
+            amount,
+        });
         const savedOrderEdit = await this.orderEditRepo.save(orderEdit);
         await Promise.all(dto.pages.map(async (editPage) => {
             const orderEditPage = this.orderEditPageRepo.create({
@@ -159,7 +167,7 @@ let OrdersService = class OrdersService {
                 const resizePages = editPage.page_resizes.map((pageResize) => this.orderResizeExtraRepo.create({
                     ...pageResize,
                     order_page: orderPage,
-                    price: 100000,
+                    price: 1000,
                     order,
                     edit_page: newEditPage,
                 }));

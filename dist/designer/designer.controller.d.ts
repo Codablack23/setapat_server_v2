@@ -5,7 +5,7 @@ export declare class DesignerController {
     private readonly designerService;
     constructor(designerService: DesignerService);
     getOrders(req: AuthRequest, status: OrdersQuery): Promise<{
-        status: "failed" | "success";
+        status: "success" | "failed";
         message: string;
         data: {
             orders: import("../entities").OrderEntity[];
@@ -13,12 +13,15 @@ export declare class DesignerController {
     }>;
     updateProfile(): void;
     getConversations(req: AuthRequest, id: string): Promise<{
-        status: "failed" | "success";
+        status: "success" | "failed";
         message: string;
         data: {
             order: {
                 conversation: import("../entities/entity.conversations").ConversationEntity;
                 submissions: import("src/lib").OrderSubmissions;
+                active_edit: import("../entities/entity.order_edits").OrderEditEntity | undefined;
+                status: import("src/lib").OrderStatus;
+                last_submitted_at: Date;
                 id: string;
                 design_class: import("src/lib").DesignClass;
                 order_id: string;
@@ -30,7 +33,6 @@ export declare class DesignerController {
                 design_assets?: any;
                 design_preferences?: any;
                 design_samples?: any;
-                status: import("src/lib").OrderStatus;
                 amount: number;
                 delivery_time: number;
                 confidential: boolean;

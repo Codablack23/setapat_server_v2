@@ -20,6 +20,9 @@ let OrderEditEntity = class OrderEditEntity {
     id;
     status;
     created_at;
+    delivery_time = 4;
+    amount;
+    delivery_date;
     completed_at;
     updated_at;
     order;
@@ -44,6 +47,24 @@ __decorate([
     (0, typeorm_1.CreateDateColumn)(),
     __metadata("design:type", Date)
 ], OrderEditEntity.prototype, "created_at", void 0);
+__decorate([
+    (0, typeorm_1.Column)("int", { default: 4 }),
+    __metadata("design:type", Number)
+], OrderEditEntity.prototype, "delivery_time", void 0);
+__decorate([
+    (0, typeorm_1.Column)({
+        type: 'int',
+        transformer: {
+            to: (value) => Math.round(value * 100),
+            from: (value) => Number(value) / 100,
+        },
+    }),
+    __metadata("design:type", Number)
+], OrderEditEntity.prototype, "amount", void 0);
+__decorate([
+    (0, typeorm_1.Column)("datetime"),
+    __metadata("design:type", Date)
+], OrderEditEntity.prototype, "delivery_date", void 0);
 __decorate([
     (0, typeorm_1.CreateDateColumn)(),
     __metadata("design:type", Date)
