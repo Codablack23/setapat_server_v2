@@ -27,6 +27,8 @@ const entity_message_revisions_1 = require("../entities/entity.message_revisions
 const entity_revisions_1 = require("../entities/entity.revisions");
 const socket_module_1 = require("../socket/socket.module");
 const socket_gateway_1 = require("../socket/socket.gateway");
+const entity_used_discount_1 = require("../entities/entity.used_discount");
+const entity_discount_1 = require("../entities/entity.discount");
 let OrdersModule = class OrdersModule {
 };
 exports.OrdersModule = OrdersModule;
@@ -51,6 +53,8 @@ exports.OrdersModule = OrdersModule = __decorate([
                 entity_messages_1.MessageEntity,
                 entity_revisions_1.SubmissionRevisions,
                 entity_message_revisions_1.MessageRevisionEntity,
+                entity_used_discount_1.UsedDiscountEntity,
+                entity_discount_1.DiscountEntity,
             ]),
             socket_module_1.SocketModule,
         ],

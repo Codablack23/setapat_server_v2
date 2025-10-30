@@ -10,19 +10,31 @@ import {
 import { DiscountEntity } from './entity.discount';
 import { OrderEntity } from './entity.order';
 
+export enum UsedDisountStatus {
+  PENDING = 'PENDING',
+  USED = 'USED',
+}
+
 @Entity({ name: 'used_discounts' })
 export class UsedDiscountEntity {
   @PrimaryGeneratedColumn('uuid')
   id: string;
 
   @Column({
+    type: 'enum',
+    enum: UsedDisountStatus,
+    default: UsedDisountStatus.PENDING,
+  })
+  status: UsedDisountStatus;
+
+  @Column({
     type: 'int',
     transformer: {
       from(value: number) {
-        return value * 100;
+        return value / 100;
       },
       to(value: number) {
-        return value / 100;
+        return value * 100;
       },
     },
     default: 3000,

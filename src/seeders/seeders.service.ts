@@ -5,7 +5,11 @@ import { UserEntity } from 'src/entities';
 import { DesignerProfileEntity } from 'src/entities/entity.designer';
 import { AppResponse, DesignerRole, Gender, UserType } from 'src/lib';
 import { Repository } from 'typeorm';
-import { oneYear30PercentDiscountSeed, superDesignerSeed } from './seeds';
+import {
+  Amount63kDiscountSeed,
+  oneYear30PercentDiscountSeed,
+  superDesignerSeed,
+} from './seeds';
 import { ENVIRONMENT } from 'src/config';
 import { DiscountInjectableUtils } from 'src/lib/utils/util.discount';
 
@@ -88,6 +92,32 @@ export class SeedersService {
       ...oneYear30PercentDiscountSeed,
       code: discountCode,
     });
+
+    const discount = await this.discountRepo.save(newDiscount);
+
+    return AppResponse.getSuccessResponse({
+      message: 'Discount seeded successfully',
+      data: {
+        discount,
+      },
+    });
+  }
+  async seedAmountDiscount() {
+    const defaultDiscount = await this.discountRepo.find({
+      where: {
+        code: Amount63kDiscountSeed.code,
+      },
+    });
+
+    if (defaultDiscount.length > 0) {
+      throw new ForbiddenException(
+        AppResponse.getFailedResponse(
+          'This Discount has already been generated',
+        ),
+      );
+    }
+
+    const newDiscount = this.discountRepo.create(Amount63kDiscountSeed);
 
     const discount = await this.discountRepo.save(newDiscount);
 

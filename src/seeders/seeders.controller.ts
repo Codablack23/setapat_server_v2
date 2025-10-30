@@ -17,6 +17,10 @@ export class SeedersController {
   seedDiscount() {
     return this.seedersService.seedDiscount();
   }
+  @Post('discounts/amount')
+  seedAmountDiscount() {
+    return this.seedersService.seedAmountDiscount();
+  }
 
   @Post('samples')
   seedSamples() {}

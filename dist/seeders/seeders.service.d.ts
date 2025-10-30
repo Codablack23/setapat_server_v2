@@ -24,4 +24,11 @@ export declare class SeedersService {
             discount: DiscountEntity;
         } | undefined;
     }>;
+    seedAmountDiscount(): Promise<{
+        status: "failed" | "success";
+        message: string;
+        data: {
+            discount: DiscountEntity;
+        } | undefined;
+    }>;
 }

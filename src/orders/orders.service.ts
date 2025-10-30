@@ -66,6 +66,11 @@ import { OrderEditEntity } from 'src/entities/entity.order_edits';
 import { OrderEditPageEntity } from 'src/entities/entity.edit_page';
 import { ConversationParticipantEntity } from 'src/entities/entity.participants';
 import { SubmissionRevisions } from 'src/entities/entity.revisions';
+import {
+  UsedDiscountEntity,
+  UsedDisountStatus,
+} from 'src/entities/entity.used_discount';
+import { DiscountEntity } from 'src/entities/entity.discount';
 
 @Injectable()
 export class OrdersService {
@@ -78,6 +83,12 @@ export class OrdersService {
 
     @InjectRepository(OrderPageEntity)
     private readonly orderPageRepository: Repository<OrderPageEntity>,
+
+    @InjectRepository(UsedDiscountEntity)
+    private readonly usedDiscountRepo: Repository<UsedDiscountEntity>,
+
+    @InjectRepository(DiscountEntity)
+    private readonly discountRepo: Repository<DiscountEntity>,
 
     @InjectRepository(OrderAssignmentEntity)
     private readonly orderAssignmentRepo: Repository<OrderAssignmentEntity>,
@@ -880,6 +891,8 @@ export class OrdersService {
 
     const pages = await Promise.all(
       orderPages.map(async (page) => {
+        console.log({ page });
+
         const newPageInstance = this.orderPageRepository.create({
           ...page,
           price: page.price,
@@ -1187,6 +1200,7 @@ export class OrdersService {
         order: {
           ...orderDetails,
           discount: orderDetails.discount?.discount,
+          used_discount: orderDetails.discount,
           conversation,
           status: activeEdit ? OrderStatus.EDIT : order.status,
           active_edit: activeEdit,
@@ -1328,6 +1342,7 @@ export class OrdersService {
     });
   }
   async completePayment(id: string, user: UserEntity) {
+    const discountRepo = this.dataSource.getRepository(UsedDiscountEntity);
     const order = await this.orderRepository.findOne({
       where: {
         id,
@@ -1335,7 +1350,8 @@ export class OrdersService {
       },
       relations: {
         user: true,
-        order_assignments: true, // load existing assignments
+        order_assignments: true,
+        discount: true, // load existing assignments
         conversations: true, // load existing conversations
       },
     });
@@ -1402,6 +1418,11 @@ export class OrdersService {
 
     await this.orderAssignmentRepo.save(orderAssignment);
 
+    if (order.discount) {
+      order.discount.status = UsedDisountStatus.USED;
+      await discountRepo.save(order.discount);
+    }
+
     // ✅ Keep existing assignments and conversations safe
     order.status = OrderStatus.PENDING;
     order.started_at = DateTime.now().toJSDate();
@@ -1440,6 +1461,15 @@ export class OrdersService {
         AppResponse.getFailedResponse('Order does not exist'),
       );
     await this.orderRepository.delete({ id });
+
+    const usedDiscountRepo = this.usedDiscountRepo;
+
+    await usedDiscountRepo.delete({
+      orders: {
+        id,
+      },
+    });
+
     return AppResponse.getSuccessResponse({
       message: 'Order deleted successfully',
     });
@@ -1571,8 +1601,6 @@ export class OrdersService {
 
       return result;
     } catch (err) {
-      console.log(err);
-
       if (err instanceof HttpException) throw err;
 
       throw new InternalServerErrorException(

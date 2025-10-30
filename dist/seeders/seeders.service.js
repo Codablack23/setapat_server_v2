@@ -89,6 +89,24 @@ let SeedersService = class SeedersService {
             },
         });
     }
+    async seedAmountDiscount() {
+        const defaultDiscount = await this.discountRepo.find({
+            where: {
+                code: seeds_1.Amount63kDiscountSeed.code,
+            },
+        });
+        if (defaultDiscount.length > 0) {
+            throw new common_1.ForbiddenException(lib_1.AppResponse.getFailedResponse('This Discount has already been generated'));
+        }
+        const newDiscount = this.discountRepo.create(seeds_1.Amount63kDiscountSeed);
+        const discount = await this.discountRepo.save(newDiscount);
+        return lib_1.AppResponse.getSuccessResponse({
+            message: 'Discount seeded successfully',
+            data: {
+                discount,
+            },
+        });
+    }
 };
 exports.SeedersService = SeedersService;
 exports.SeedersService = SeedersService = __decorate([

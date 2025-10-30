@@ -17,11 +17,15 @@ import { OrderEditEntity } from 'src/entities/entity.order_edits';
 import { OrderEditPageEntity } from 'src/entities/entity.edit_page';
 import { ConversationParticipantEntity } from 'src/entities/entity.participants';
 import { SubmissionRevisions } from 'src/entities/entity.revisions';
+import { UsedDiscountEntity } from 'src/entities/entity.used_discount';
+import { DiscountEntity } from 'src/entities/entity.discount';
 export declare class OrdersService {
     private readonly orderUtil;
     private readonly orderRepository;
     private readonly dataSource;
     private readonly orderPageRepository;
+    private readonly usedDiscountRepo;
+    private readonly discountRepo;
     private readonly orderAssignmentRepo;
     private readonly designerRepo;
     private readonly orderBriefAttachmentRepo;
@@ -37,7 +41,7 @@ export declare class OrdersService {
     private readonly submissionRevisionRepo;
     private readonly participantsRepo;
     private socketGateway;
-    constructor(orderUtil: OrdersUtil, orderRepository: Repository<OrderEntity>, dataSource: DataSource, orderPageRepository: Repository<OrderPageEntity>, orderAssignmentRepo: Repository<OrderAssignmentEntity>, designerRepo: Repository<DesignerProfileEntity>, orderBriefAttachmentRepo: Repository<OrderBriefAttachmentEntity>, orderResizeExtraRepo: Repository<OrderResizeExtraEntity>, notificationRepo: Repository<NotificationEntity>, orderSubmissionRepo: Repository<OrderSubmissionEntity>, orderReviewRepo: Repository<OrderReviewEntity>, orderReceiptRepo: Repository<OrderReceiptEntity>, orderEditRepo: Repository<OrderEditEntity>, orderEditPageRepo: Repository<OrderEditPageEntity>, conversationRepo: Repository<ConversationEntity>, messageRepo: Repository<MessageEntity>, submissionRevisionRepo: Repository<SubmissionRevisions>, participantsRepo: Repository<ConversationParticipantEntity>, socketGateway: SocketGateway);
+    constructor(orderUtil: OrdersUtil, orderRepository: Repository<OrderEntity>, dataSource: DataSource, orderPageRepository: Repository<OrderPageEntity>, usedDiscountRepo: Repository<UsedDiscountEntity>, discountRepo: Repository<DiscountEntity>, orderAssignmentRepo: Repository<OrderAssignmentEntity>, designerRepo: Repository<DesignerProfileEntity>, orderBriefAttachmentRepo: Repository<OrderBriefAttachmentEntity>, orderResizeExtraRepo: Repository<OrderResizeExtraEntity>, notificationRepo: Repository<NotificationEntity>, orderSubmissionRepo: Repository<OrderSubmissionEntity>, orderReviewRepo: Repository<OrderReviewEntity>, orderReceiptRepo: Repository<OrderReceiptEntity>, orderEditRepo: Repository<OrderEditEntity>, orderEditPageRepo: Repository<OrderEditPageEntity>, conversationRepo: Repository<ConversationEntity>, messageRepo: Repository<MessageEntity>, submissionRevisionRepo: Repository<SubmissionRevisions>, participantsRepo: Repository<ConversationParticipantEntity>, socketGateway: SocketGateway);
     reviewOrder(userId: string, id: string, dto: CreateOrderReviewDto): Promise<{
         status: "failed" | "success";
         message: string;
@@ -151,7 +155,7 @@ export declare class OrdersService {
                 notifications: NotificationEntity[];
                 revisions: SubmissionRevisions[];
                 user: UserEntity;
-                discount?: import("../entities/entity.used_discount").UsedDiscountEntity;
+                discount?: UsedDiscountEntity;
                 created_at: Date;
                 updated_at: Date;
             }[];
@@ -162,7 +166,8 @@ export declare class OrdersService {
         message: string;
         data: {
             order: {
-                discount: import("../entities/entity.discount").DiscountEntity | undefined;
+                discount: DiscountEntity | undefined;
+                used_discount: UsedDiscountEntity | undefined;
                 conversation: ConversationEntity;
                 status: OrderStatus;
                 active_edit: OrderEditEntity | undefined;

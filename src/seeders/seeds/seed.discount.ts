@@ -9,3 +9,13 @@ export const oneYear30PercentDiscountSeed: Partial<DiscountEntity> = {
   is_active: true,
   starts_at: new Date(), // optional: now
 };
+
+export const Amount63kDiscountSeed: Partial<DiscountEntity> = {
+  description: '63,000 Credit Discount',
+  type: DiscountType.FLAT,
+  code: 'SAVCAM2910250002',
+  amount: 63000,
+  is_one_time: false,
+  is_active: true,
+  starts_at: new Date(), // optional: now
+};

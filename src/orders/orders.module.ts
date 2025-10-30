@@ -24,6 +24,8 @@ import { MessageRevisionEntity } from 'src/entities/entity.message_revisions';
 import { SubmissionRevisions } from 'src/entities/entity.revisions';
 import { SocketModule } from 'src/socket/socket.module';
 import { SocketGateway } from 'src/socket/socket.gateway';
+import { UsedDiscountEntity } from 'src/entities/entity.used_discount';
+import { DiscountEntity } from 'src/entities/entity.discount';
 
 @Module({
   imports: [
@@ -45,6 +47,8 @@ import { SocketGateway } from 'src/socket/socket.gateway';
       MessageEntity,
       SubmissionRevisions,
       MessageRevisionEntity,
+      UsedDiscountEntity,
+      DiscountEntity,
     ]),
     SocketModule,
   ],

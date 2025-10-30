@@ -9,12 +9,18 @@ var __metadata = (this && this.__metadata) || function (k, v) {
     if (typeof Reflect === "object" && typeof Reflect.metadata === "function") return Reflect.metadata(k, v);
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.UsedDiscountEntity = void 0;
+exports.UsedDiscountEntity = exports.UsedDisountStatus = void 0;
 const typeorm_1 = require("typeorm");
 const entity_discount_1 = require("./entity.discount");
 const entity_order_1 = require("./entity.order");
+var UsedDisountStatus;
+(function (UsedDisountStatus) {
+    UsedDisountStatus["PENDING"] = "PENDING";
+    UsedDisountStatus["USED"] = "USED";
+})(UsedDisountStatus || (exports.UsedDisountStatus = UsedDisountStatus = {}));
 let UsedDiscountEntity = class UsedDiscountEntity {
     id;
+    status;
     amount;
     discount;
     orders;
@@ -28,13 +34,21 @@ __decorate([
 ], UsedDiscountEntity.prototype, "id", void 0);
 __decorate([
     (0, typeorm_1.Column)({
+        type: 'enum',
+        enum: UsedDisountStatus,
+        default: UsedDisountStatus.PENDING,
+    }),
+    __metadata("design:type", String)
+], UsedDiscountEntity.prototype, "status", void 0);
+__decorate([
+    (0, typeorm_1.Column)({
         type: 'int',
         transformer: {
             from(value) {
-                return value * 100;
+                return value / 100;
             },
             to(value) {
-                return value / 100;
+                return value * 100;
             },
         },
         default: 3000,

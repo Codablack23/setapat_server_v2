@@ -24,6 +24,9 @@ let SeedersController = class SeedersController {
     seedDiscount() {
         return this.seedersService.seedDiscount();
     }
+    seedAmountDiscount() {
+        return this.seedersService.seedAmountDiscount();
+    }
     seedSamples() { }
     seedAppConfig() { }
 };
@@ -46,6 +49,12 @@ __decorate([
     __metadata("design:paramtypes", []),
     __metadata("design:returntype", void 0)
 ], SeedersController.prototype, "seedDiscount", null);
+__decorate([
+    (0, common_1.Post)('discounts/amount'),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", []),
+    __metadata("design:returntype", void 0)
+], SeedersController.prototype, "seedAmountDiscount", null);
 __decorate([
     (0, common_1.Post)('samples'),
     __metadata("design:type", Function),

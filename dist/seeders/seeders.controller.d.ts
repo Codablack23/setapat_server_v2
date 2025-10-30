@@ -18,6 +18,13 @@ export declare class SeedersController {
             discount: import("../entities/entity.discount").DiscountEntity;
         } | undefined;
     }>;
+    seedAmountDiscount(): Promise<{
+        status: "failed" | "success";
+        message: string;
+        data: {
+            discount: import("../entities/entity.discount").DiscountEntity;
+        } | undefined;
+    }>;
     seedSamples(): void;
     seedAppConfig(): void;
 }

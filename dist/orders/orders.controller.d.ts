@@ -63,6 +63,7 @@ export declare class OrdersController {
         data: {
             order: {
                 discount: import("../entities/entity.discount").DiscountEntity | undefined;
+                used_discount: import("../entities/entity.used_discount").UsedDiscountEntity | undefined;
                 conversation: import("../entities/entity.conversations").ConversationEntity;
                 status: import("src/lib").OrderStatus;
                 active_edit: import("../entities/entity.order_edits").OrderEditEntity | undefined;

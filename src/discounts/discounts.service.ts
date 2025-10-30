@@ -1,5 +1,6 @@
 /* eslint-disable @typescript-eslint/no-unused-vars */
 import {
+  BadRequestException,
   ForbiddenException,
   Injectable,
   NotFoundException,
@@ -11,7 +12,10 @@ import { DiscountEntity } from 'src/entities/entity.discount';
 import { Repository } from 'typeorm';
 import { AppResponse } from 'src/lib';
 import { DiscountUtils } from 'src/lib/utils/util.discount';
-import { UsedDiscountEntity } from 'src/entities/entity.used_discount';
+import {
+  UsedDiscountEntity,
+  UsedDisountStatus,
+} from 'src/entities/entity.used_discount';
 import { OrderEntity } from 'src/entities';
 
 @Injectable()
@@ -50,19 +54,23 @@ export class DiscountsService {
       );
     }
 
+    const usedDiscounts = discount.used_discounts.filter(
+      (item) => item.status == UsedDisountStatus.USED,
+    );
+
     const voucher = DiscountUtils.validateDiscount(
       discount,
-      discount.used_discounts.length,
+      usedDiscounts.length,
     );
 
     const used_discount_amount = DiscountUtils.getUsedDiscountsPerCycleAmount(
       voucher.cycle_type,
-      discount.used_discounts,
+      usedDiscounts,
     );
 
     const used_discounts = DiscountUtils.getUsedDiscountsPerCycle(
       discount.cycle_type,
-      voucher.used_discounts,
+      usedDiscounts,
     );
 
     return AppResponse.getSuccessResponse({
@@ -91,34 +99,30 @@ export class DiscountsService {
       );
     }
 
-    const voucher = DiscountUtils.validateDiscount(
-      discount,
-      discount.used_discounts.length,
-      discount.used_discounts,
+    const usedDiscounts = discount.used_discounts.filter(
+      (item) => item.status == UsedDisountStatus.USED,
     );
 
-    const usedVoucher = await this.usedDiscountRepo.findOne({
-      where: {
-        discount: {
-          id: discount.id,
-        },
-        orders: {
-          id: applyDiscountDto.order_id,
-        },
-      },
-    });
+    const voucher = DiscountUtils.validateDiscount(
+      discount,
+      usedDiscounts.length,
+      usedDiscounts,
+    );
 
-    if (usedVoucher) {
-      throw new ForbiddenException(
-        AppResponse.getFailedResponse(
-          'This voucher has been used for this order',
-        ),
-      );
-    }
+    const used_discount_amount = DiscountUtils.getUsedDiscountsPerCycleAmount(
+      voucher.cycle_type,
+      usedDiscounts,
+    );
+
+    const usableBalance = voucher.amount - used_discount_amount;
 
     const order = await this.orderRepo.findOne({
       where: {
         id: applyDiscountDto.order_id,
+      },
+      relations: {
+        pages: true,
+        resize_extras: true,
       },
     });
 
@@ -128,10 +132,32 @@ export class DiscountsService {
       );
     }
 
+    const orderAmount = order.pages.reduce((acc, item) => acc + item.price, 0);
+    const resizeAmount = order.resize_extras.reduce(
+      (acc, item) => acc + item.price,
+      0,
+    );
+
+    const quickDeliveryAmount = order.quick_delivery ? orderAmount * 0.25 : 0;
+
+    const amount = orderAmount + resizeAmount + quickDeliveryAmount;
+
     const usedDiscount = this.usedDiscountRepo.create({
       discount,
-      amount: order.amount,
+      amount: Math.min(amount, usableBalance),
     });
+
+    console.log({
+      amount,
+      orderAmount,
+      used_discount_amount,
+    });
+
+    if (usableBalance < 1) {
+      throw new BadRequestException(
+        AppResponse.getFailedResponse('This is voucher has no usable balance'),
+      );
+    }
 
     const orderDiscount = await this.usedDiscountRepo.save(usedDiscount);
     order.discount = orderDiscount;

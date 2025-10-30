@@ -35,11 +35,15 @@ const entity_order_edits_1 = require("../entities/entity.order_edits");
 const entity_edit_page_1 = require("../entities/entity.edit_page");
 const entity_participants_1 = require("../entities/entity.participants");
 const entity_revisions_1 = require("../entities/entity.revisions");
+const entity_used_discount_1 = require("../entities/entity.used_discount");
+const entity_discount_1 = require("../entities/entity.discount");
 let OrdersService = class OrdersService {
     orderUtil;
     orderRepository;
     dataSource;
     orderPageRepository;
+    usedDiscountRepo;
+    discountRepo;
     orderAssignmentRepo;
     designerRepo;
     orderBriefAttachmentRepo;
@@ -55,11 +59,13 @@ let OrdersService = class OrdersService {
     submissionRevisionRepo;
     participantsRepo;
     socketGateway;
-    constructor(orderUtil, orderRepository, dataSource, orderPageRepository, orderAssignmentRepo, designerRepo, orderBriefAttachmentRepo, orderResizeExtraRepo, notificationRepo, orderSubmissionRepo, orderReviewRepo, orderReceiptRepo, orderEditRepo, orderEditPageRepo, conversationRepo, messageRepo, submissionRevisionRepo, participantsRepo, socketGateway) {
+    constructor(orderUtil, orderRepository, dataSource, orderPageRepository, usedDiscountRepo, discountRepo, orderAssignmentRepo, designerRepo, orderBriefAttachmentRepo, orderResizeExtraRepo, notificationRepo, orderSubmissionRepo, orderReviewRepo, orderReceiptRepo, orderEditRepo, orderEditPageRepo, conversationRepo, messageRepo, submissionRevisionRepo, participantsRepo, socketGateway) {
         this.orderUtil = orderUtil;
         this.orderRepository = orderRepository;
         this.dataSource = dataSource;
         this.orderPageRepository = orderPageRepository;
+        this.usedDiscountRepo = usedDiscountRepo;
+        this.discountRepo = discountRepo;
         this.orderAssignmentRepo = orderAssignmentRepo;
         this.designerRepo = designerRepo;
         this.orderBriefAttachmentRepo = orderBriefAttachmentRepo;
@@ -535,6 +541,7 @@ let OrdersService = class OrdersService {
         const order_id = await this.orderUtil.generateOrderNumber(createOrderDto.design_package);
         const orderPages = createOrderDto.pages;
         const pages = await Promise.all(orderPages.map(async (page) => {
+            console.log({ page });
             const newPageInstance = this.orderPageRepository.create({
                 ...page,
                 price: page.price,
@@ -775,6 +782,7 @@ let OrdersService = class OrdersService {
                 order: {
                     ...orderDetails,
                     discount: orderDetails.discount?.discount,
+                    used_discount: orderDetails.discount,
                     conversation,
                     status: activeEdit ? lib_1.OrderStatus.EDIT : order.status,
                     active_edit: activeEdit,
@@ -879,6 +887,7 @@ let OrdersService = class OrdersService {
         });
     }
     async completePayment(id, user) {
+        const discountRepo = this.dataSource.getRepository(entity_used_discount_1.UsedDiscountEntity);
         const order = await this.orderRepository.findOne({
             where: {
                 id,
@@ -887,6 +896,7 @@ let OrdersService = class OrdersService {
             relations: {
                 user: true,
                 order_assignments: true,
+                discount: true,
                 conversations: true,
             },
         });
@@ -927,6 +937,10 @@ let OrdersService = class OrdersService {
             designer,
         });
         await this.orderAssignmentRepo.save(orderAssignment);
+        if (order.discount) {
+            order.discount.status = entity_used_discount_1.UsedDisountStatus.USED;
+            await discountRepo.save(order.discount);
+        }
         order.status = lib_1.OrderStatus.PENDING;
         order.started_at = luxon_1.DateTime.now().toJSDate();
         order.order_id = pendingOrderId;
@@ -954,6 +968,12 @@ let OrdersService = class OrdersService {
         if (!order)
             throw new common_1.NotFoundException(lib_1.AppResponse.getFailedResponse('Order does not exist'));
         await this.orderRepository.delete({ id });
+        const usedDiscountRepo = this.usedDiscountRepo;
+        await usedDiscountRepo.delete({
+            orders: {
+                id,
+            },
+        });
         return lib_1.AppResponse.getSuccessResponse({
             message: 'Order deleted successfully',
         });
@@ -1025,7 +1045,6 @@ let OrdersService = class OrdersService {
             return result;
         }
         catch (err) {
-            console.log(err);
             if (err instanceof common_1.HttpException)
                 throw err;
             throw new common_1.InternalServerErrorException(lib_1.AppResponse.getFailedResponse('Failed to add design brief'));
@@ -1037,23 +1056,27 @@ exports.OrdersService = OrdersService = __decorate([
     (0, common_1.Injectable)(),
     __param(1, (0, typeorm_1.InjectRepository)(entities_1.OrderEntity)),
     __param(3, (0, typeorm_1.InjectRepository)(entities_1.OrderPageEntity)),
-    __param(4, (0, typeorm_1.InjectRepository)(entity_order_assignments_1.OrderAssignmentEntity)),
-    __param(5, (0, typeorm_1.InjectRepository)(entity_designer_1.DesignerProfileEntity)),
-    __param(6, (0, typeorm_1.InjectRepository)(entities_1.OrderBriefAttachmentEntity)),
-    __param(7, (0, typeorm_1.InjectRepository)(entities_1.OrderResizeExtraEntity)),
-    __param(8, (0, typeorm_1.InjectRepository)(entity_notification_1.NotificationEntity)),
-    __param(9, (0, typeorm_1.InjectRepository)(entities_1.OrderSubmissionEntity)),
-    __param(10, (0, typeorm_1.InjectRepository)(entity_order_reviews_1.OrderReviewEntity)),
-    __param(11, (0, typeorm_1.InjectRepository)(entity_order_receipts_1.OrderReceiptEntity)),
-    __param(12, (0, typeorm_1.InjectRepository)(entity_order_edits_1.OrderEditEntity)),
-    __param(13, (0, typeorm_1.InjectRepository)(entity_edit_page_1.OrderEditPageEntity)),
-    __param(14, (0, typeorm_1.InjectRepository)(entity_conversations_1.ConversationEntity)),
-    __param(15, (0, typeorm_1.InjectRepository)(entity_messages_1.MessageEntity)),
-    __param(16, (0, typeorm_1.InjectRepository)(entity_revisions_1.SubmissionRevisions)),
-    __param(17, (0, typeorm_1.InjectRepository)(entity_participants_1.ConversationParticipantEntity)),
+    __param(4, (0, typeorm_1.InjectRepository)(entity_used_discount_1.UsedDiscountEntity)),
+    __param(5, (0, typeorm_1.InjectRepository)(entity_discount_1.DiscountEntity)),
+    __param(6, (0, typeorm_1.InjectRepository)(entity_order_assignments_1.OrderAssignmentEntity)),
+    __param(7, (0, typeorm_1.InjectRepository)(entity_designer_1.DesignerProfileEntity)),
+    __param(8, (0, typeorm_1.InjectRepository)(entities_1.OrderBriefAttachmentEntity)),
+    __param(9, (0, typeorm_1.InjectRepository)(entities_1.OrderResizeExtraEntity)),
+    __param(10, (0, typeorm_1.InjectRepository)(entity_notification_1.NotificationEntity)),
+    __param(11, (0, typeorm_1.InjectRepository)(entities_1.OrderSubmissionEntity)),
+    __param(12, (0, typeorm_1.InjectRepository)(entity_order_reviews_1.OrderReviewEntity)),
+    __param(13, (0, typeorm_1.InjectRepository)(entity_order_receipts_1.OrderReceiptEntity)),
+    __param(14, (0, typeorm_1.InjectRepository)(entity_order_edits_1.OrderEditEntity)),
+    __param(15, (0, typeorm_1.InjectRepository)(entity_edit_page_1.OrderEditPageEntity)),
+    __param(16, (0, typeorm_1.InjectRepository)(entity_conversations_1.ConversationEntity)),
+    __param(17, (0, typeorm_1.InjectRepository)(entity_messages_1.MessageEntity)),
+    __param(18, (0, typeorm_1.InjectRepository)(entity_revisions_1.SubmissionRevisions)),
+    __param(19, (0, typeorm_1.InjectRepository)(entity_participants_1.ConversationParticipantEntity)),
     __metadata("design:paramtypes", [lib_1.OrdersUtil,
         typeorm_2.Repository,
         typeorm_2.DataSource,
+        typeorm_2.Repository,
+        typeorm_2.Repository,
         typeorm_2.Repository,
         typeorm_2.Repository,
         typeorm_2.Repository,

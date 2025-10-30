@@ -48,9 +48,10 @@ let DiscountsService = class DiscountsService {
         if (!discount) {
             throw new common_1.NotFoundException(lib_1.AppResponse.getFailedResponse('Voucher Not Found!'));
         }
-        const voucher = util_discount_1.DiscountUtils.validateDiscount(discount, discount.used_discounts.length);
-        const used_discount_amount = util_discount_1.DiscountUtils.getUsedDiscountsPerCycleAmount(voucher.cycle_type, discount.used_discounts);
-        const used_discounts = util_discount_1.DiscountUtils.getUsedDiscountsPerCycle(discount.cycle_type, voucher.used_discounts);
+        const usedDiscounts = discount.used_discounts.filter((item) => item.status == entity_used_discount_1.UsedDisountStatus.USED);
+        const voucher = util_discount_1.DiscountUtils.validateDiscount(discount, usedDiscounts.length);
+        const used_discount_amount = util_discount_1.DiscountUtils.getUsedDiscountsPerCycleAmount(voucher.cycle_type, usedDiscounts);
+        const used_discounts = util_discount_1.DiscountUtils.getUsedDiscountsPerCycle(discount.cycle_type, usedDiscounts);
         return lib_1.AppResponse.getSuccessResponse({
             message: 'voucher retrieved successfully',
             data: {
@@ -74,32 +75,38 @@ let DiscountsService = class DiscountsService {
         if (!discount) {
             throw new common_1.NotFoundException(lib_1.AppResponse.getFailedResponse('Voucher does not exist'));
         }
-        const voucher = util_discount_1.DiscountUtils.validateDiscount(discount, discount.used_discounts.length, discount.used_discounts);
-        const usedVoucher = await this.usedDiscountRepo.findOne({
-            where: {
-                discount: {
-                    id: discount.id,
-                },
-                orders: {
-                    id: applyDiscountDto.order_id,
-                },
-            },
-        });
-        if (usedVoucher) {
-            throw new common_1.ForbiddenException(lib_1.AppResponse.getFailedResponse('This voucher has been used for this order'));
-        }
+        const usedDiscounts = discount.used_discounts.filter((item) => item.status == entity_used_discount_1.UsedDisountStatus.USED);
+        const voucher = util_discount_1.DiscountUtils.validateDiscount(discount, usedDiscounts.length, usedDiscounts);
+        const used_discount_amount = util_discount_1.DiscountUtils.getUsedDiscountsPerCycleAmount(voucher.cycle_type, usedDiscounts);
+        const usableBalance = voucher.amount - used_discount_amount;
         const order = await this.orderRepo.findOne({
             where: {
                 id: applyDiscountDto.order_id,
+            },
+            relations: {
+                pages: true,
+                resize_extras: true,
             },
         });
         if (!order) {
             throw new common_1.NotFoundException(lib_1.AppResponse.getFailedResponse('Order could not be found'));
         }
+        const orderAmount = order.pages.reduce((acc, item) => acc + item.price, 0);
+        const resizeAmount = order.resize_extras.reduce((acc, item) => acc + item.price, 0);
+        const quickDeliveryAmount = order.quick_delivery ? orderAmount * 0.25 : 0;
+        const amount = orderAmount + resizeAmount + quickDeliveryAmount;
         const usedDiscount = this.usedDiscountRepo.create({
             discount,
-            amount: order.amount,
+            amount: Math.min(amount, usableBalance),
         });
+        console.log({
+            amount,
+            orderAmount,
+            used_discount_amount,
+        });
+        if (usableBalance < 1) {
+            throw new common_1.BadRequestException(lib_1.AppResponse.getFailedResponse('This is voucher has no usable balance'));
+        }
         const orderDiscount = await this.usedDiscountRepo.save(usedDiscount);
         order.discount = orderDiscount;
         await this.orderRepo.save(order);
