@@ -219,6 +219,7 @@ export class OrdersService {
       relations: {
         order_edits: true,
         pages: true,
+        resize_extras: true,
       },
     });
 
@@ -281,6 +282,7 @@ export class OrdersService {
               ...pageResize,
               order_page: orderPage,
               price: 1000,
+              page: pageResize.page + order.resize_extras.length,
               order,
               edit_page: newEditPage,
             }),
@@ -429,24 +431,25 @@ export class OrdersService {
     maxRevisionsPerPage: number,
     user: UserEntity,
     order: OrderEntity,
+    submissionType = SubmissionType.ORDER,
   ) {
     const isResize = submission.page_type == SubmissionPageType.RESIZE;
 
     const pageRevisions = revisions.filter(
       (item) =>
+        item.type == submissionType &&
         item.page_type == SubmissionPageType.PAGE &&
         item.page == submission.page,
     );
     const resizeRevisions = revisions.filter(
       (item) =>
+        item.type == submissionType &&
         item.page_type == SubmissionPageType.RESIZE &&
         item.page == submission.page &&
         item.resize_page == submission.resize_page,
     );
 
     const count = isResize ? resizeRevisions.length : pageRevisions.length;
-
-    console.log({ count });
 
     if (count >= maxRevisionsPerPage) {
       // Optionally send notification before blocking
@@ -529,6 +532,8 @@ export class OrdersService {
    */
   private createSubmissionRevisions(
     submissions: OrderSubmissionEntity[],
+    submissionType = SubmissionType.ORDER,
+    order_edit?: OrderEditEntity,
   ): SubmissionRevisions[] {
     const revisionMap = new Map<string, SubmissionRevisions>();
 
@@ -542,7 +547,9 @@ export class OrdersService {
       if (!revisionMap.has(key)) {
         const revision = this.submissionRevisionRepo.create({
           page_type: submission.page_type,
+          type: submissionType,
           page: submission.page,
+          order_edit,
           resize_page:
             submission.page_type === SubmissionPageType.RESIZE
               ? submission.resize_page
@@ -795,8 +802,6 @@ export class OrdersService {
       },
     });
 
-    console.log({ edit });
-
     if (!edit)
       throw new NotFoundException(
         AppResponse.getFailedResponse('Order Edit not found'),
@@ -809,7 +814,6 @@ export class OrdersService {
     }
 
     const conversation = order.conversations[0];
-    const designPlan = DESIGN_PLANS[order.design_package];
 
     // 2️⃣ Fetch existing revisions (filtered by order for efficiency)
     const existingRevisions = await this.submissionRevisionRepo.find({
@@ -821,16 +825,20 @@ export class OrdersService {
     });
 
     // 3️⃣ Validate incoming submissions
-    dto.submissions.forEach((submission) =>
-      this.validateRevisionLimit(
+    dto.submissions.forEach((submission) => {
+      const editPages = edit.pages;
+      const editPage = editPages.find((item) => item.page == submission.page);
+
+      const maxRevisions = (editPage?.revisions ?? 1) + 1;
+      return this.validateRevisionLimit(
         submission,
         existingRevisions,
-        (edit.pages.find((item) => item.page == submission.page)?.revisions ??
-          1) + 1,
+        maxRevisions,
         order.user,
         order,
-      ),
-    );
+        SubmissionType.EDIT,
+      );
+    });
 
     // 4️⃣ Save submissions, messages, and revisions in a single transaction
     await this.dataSource.transaction(async (manager) => {
@@ -840,12 +848,14 @@ export class OrdersService {
       const messageRevisionRepo = manager.getRepository(MessageRevisionEntity);
 
       const submissions = submissionRepo.create(
-        dto.submissions.map((s) => ({
-          ...s,
-          order,
-          type: SubmissionType.EDIT,
-          order_edit: edit,
-        })),
+        dto.submissions.map((s) => {
+          return {
+            ...s,
+            order,
+            type: SubmissionType.EDIT,
+            order_edit: edit,
+          };
+        }),
       );
 
       const savedSubmissions = await submissionRepo.save(submissions);
@@ -860,7 +870,12 @@ export class OrdersService {
       const newMessage = await messageRepo.save(message);
 
       // Create revision records
-      const newRevisions = this.createSubmissionRevisions(savedSubmissions);
+      const newRevisions = this.createSubmissionRevisions(
+        savedSubmissions,
+        SubmissionType.EDIT,
+        edit,
+      );
+
       await revisionRepo.save(newRevisions);
 
       const messageRevisions = this.createMessageRevisions(
@@ -925,8 +940,6 @@ export class OrdersService {
       },
     });
 
-    console.log({ orderEdit });
-
     if (!orderEdit) {
       throw new NotFoundException(
         AppResponse.getFailedResponse('Order edit could not be found'),
@@ -959,8 +972,6 @@ export class OrdersService {
 
     const pages = await Promise.all(
       orderPages.map(async (page) => {
-        console.log({ page });
-
         const newPageInstance = this.orderPageRepository.create({
           ...page,
           price: page.price,

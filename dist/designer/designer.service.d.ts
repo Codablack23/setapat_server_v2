@@ -1,26 +1,54 @@
 import { Repository } from 'typeorm';
-import { OrderEntity } from 'src/entities';
+import { OrderBriefAttachmentEntity, OrderEntity, OrderResizeExtraEntity, OrderSubmissionEntity } from 'src/entities';
 import { OrderStatus, OrderSubmissions } from 'src/lib';
+import { ConversationEntity } from 'src/entities/entity.conversations';
+import { DesignerProfileEntity } from 'src/entities/entity.designer';
+import { OrderEditPageEntity } from 'src/entities/entity.edit_page';
+import { MessageEntity } from 'src/entities/entity.messages';
+import { NotificationEntity } from 'src/entities/entity.notification';
+import { OrderAssignmentEntity } from 'src/entities/entity.order_assignments';
+import { OrderEditEntity } from 'src/entities/entity.order_edits';
+import { OrderReceiptEntity } from 'src/entities/entity.order_receipts';
+import { OrderReviewEntity } from 'src/entities/entity.order_reviews';
+import { SubmissionRevisions } from 'src/entities/entity.revisions';
 export type OrdersQuery = 'pending' | 'withdrawal';
 export declare class DesignerService {
     private readonly orderRepo;
-    constructor(orderRepo: Repository<OrderEntity>);
+    private readonly orderAssignmentRepo;
+    private readonly designerRepo;
+    private readonly orderBriefAttachmentRepo;
+    private readonly orderResizeExtraRepo;
+    private readonly notificationRepo;
+    private readonly orderSubmissionRepo;
+    private readonly orderReviewRepo;
+    private readonly orderReceiptRepo;
+    private readonly orderEditRepo;
+    private readonly orderEditPageRepo;
+    private readonly conversationRepo;
+    private readonly messageRepo;
+    private readonly submissionRevisionRepo;
+    constructor(orderRepo: Repository<OrderEntity>, orderAssignmentRepo: Repository<OrderAssignmentEntity>, designerRepo: Repository<DesignerProfileEntity>, orderBriefAttachmentRepo: Repository<OrderBriefAttachmentEntity>, orderResizeExtraRepo: Repository<OrderResizeExtraEntity>, notificationRepo: Repository<NotificationEntity>, orderSubmissionRepo: Repository<OrderSubmissionEntity>, orderReviewRepo: Repository<OrderReviewEntity>, orderReceiptRepo: Repository<OrderReceiptEntity>, orderEditRepo: Repository<OrderEditEntity>, orderEditPageRepo: Repository<OrderEditPageEntity>, conversationRepo: Repository<ConversationEntity>, messageRepo: Repository<MessageEntity>, submissionRevisionRepo: Repository<SubmissionRevisions>);
     private sortOrders;
     getOrders(userId: string, query?: OrdersQuery): Promise<{
-        status: "failed" | "success";
+        status: "success" | "failed";
         message: string;
         data: {
             orders: OrderEntity[];
         } | undefined;
     }>;
     getOrder(userId: string, orderId: string): Promise<{
-        status: "failed" | "success";
+        status: "success" | "failed";
         message: string;
         data: {
             order: {
-                conversation: import("../entities/entity.conversations").ConversationEntity;
+                pages: import("src/entities").OrderPageEntity[];
+                brief_attachments: OrderBriefAttachmentEntity[];
                 submissions: OrderSubmissions;
-                active_edit: import("../entities/entity.order_edits").OrderEditEntity | undefined;
+                conversation: ConversationEntity;
+                order_edits: OrderEditEntity[];
+                revisions: SubmissionRevisions[];
+                resize_extras: OrderResizeExtraEntity[];
+                active_edit: OrderEditEntity | undefined;
                 status: OrderStatus;
                 last_submitted_at: Date;
                 id: string;
@@ -43,15 +71,11 @@ export declare class DesignerService {
                 commenced_at?: Date;
                 completed_at?: Date;
                 last_edited_at?: Date;
-                resize_extras: import("src/entities").OrderResizeExtraEntity[];
-                order_edits: import("../entities/entity.order_edits").OrderEditEntity[];
-                order_assignments: import("../entities/entity.order_assignments").OrderAssignmentEntity[];
-                brief_attachments: import("src/entities").OrderBriefAttachmentEntity[];
-                pages: import("src/entities").OrderPageEntity[];
-                reviews: import("../entities/entity.order_reviews").OrderReviewEntity[];
-                receipts: import("../entities/entity.order_receipts").OrderReceiptEntity[];
-                notifications: import("../entities/entity.notification").NotificationEntity[];
-                revisions: import("../entities/entity.revisions").SubmissionRevisions[];
+                order_assignments: OrderAssignmentEntity[];
+                conversations: ConversationEntity[];
+                reviews: OrderReviewEntity[];
+                receipts: OrderReceiptEntity[];
+                notifications: NotificationEntity[];
                 user: import("src/entities").UserEntity;
                 discount?: import("../entities/entity.used_discount").UsedDiscountEntity;
                 created_at: Date;

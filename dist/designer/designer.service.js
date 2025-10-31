@@ -18,10 +18,46 @@ const typeorm_1 = require("@nestjs/typeorm");
 const typeorm_2 = require("typeorm");
 const entities_1 = require("../entities");
 const lib_1 = require("../lib");
+const entity_conversations_1 = require("../entities/entity.conversations");
+const entity_designer_1 = require("../entities/entity.designer");
+const entity_edit_page_1 = require("../entities/entity.edit_page");
+const entity_messages_1 = require("../entities/entity.messages");
+const entity_notification_1 = require("../entities/entity.notification");
+const entity_order_assignments_1 = require("../entities/entity.order_assignments");
+const entity_order_edits_1 = require("../entities/entity.order_edits");
+const entity_order_receipts_1 = require("../entities/entity.order_receipts");
+const entity_order_reviews_1 = require("../entities/entity.order_reviews");
+const entity_revisions_1 = require("../entities/entity.revisions");
 let DesignerService = class DesignerService {
     orderRepo;
-    constructor(orderRepo) {
+    orderAssignmentRepo;
+    designerRepo;
+    orderBriefAttachmentRepo;
+    orderResizeExtraRepo;
+    notificationRepo;
+    orderSubmissionRepo;
+    orderReviewRepo;
+    orderReceiptRepo;
+    orderEditRepo;
+    orderEditPageRepo;
+    conversationRepo;
+    messageRepo;
+    submissionRevisionRepo;
+    constructor(orderRepo, orderAssignmentRepo, designerRepo, orderBriefAttachmentRepo, orderResizeExtraRepo, notificationRepo, orderSubmissionRepo, orderReviewRepo, orderReceiptRepo, orderEditRepo, orderEditPageRepo, conversationRepo, messageRepo, submissionRevisionRepo) {
         this.orderRepo = orderRepo;
+        this.orderAssignmentRepo = orderAssignmentRepo;
+        this.designerRepo = designerRepo;
+        this.orderBriefAttachmentRepo = orderBriefAttachmentRepo;
+        this.orderResizeExtraRepo = orderResizeExtraRepo;
+        this.notificationRepo = notificationRepo;
+        this.orderSubmissionRepo = orderSubmissionRepo;
+        this.orderReviewRepo = orderReviewRepo;
+        this.orderReceiptRepo = orderReceiptRepo;
+        this.orderEditRepo = orderEditRepo;
+        this.orderEditPageRepo = orderEditPageRepo;
+        this.conversationRepo = conversationRepo;
+        this.messageRepo = messageRepo;
+        this.submissionRevisionRepo = submissionRevisionRepo;
     }
     sortOrders(orders) {
         return [...orders].sort((a, b) => {
@@ -98,59 +134,77 @@ let DesignerService = class DesignerService {
             where: {
                 id: orderId,
                 order_assignments: {
-                    designer: {
-                        user: {
-                            id: userId,
-                        },
-                    },
+                    designer: { user: { id: userId } },
                 },
             },
             relations: {
-                pages: {
-                    page_resizes: true,
-                },
-                brief_attachments: true,
-                submissions: true,
-                conversations: true,
-                order_edits: {
-                    pages: true,
-                },
-                revisions: true,
                 order_assignments: {
-                    designer: {
-                        user: true,
-                    },
+                    designer: { user: true },
                 },
-                discount: {
-                    discount: true,
-                },
-                resize_extras: {
-                    order_page: true,
-                },
+                discount: { discount: true },
             },
-            order: { created_at: 'DESC' },
         });
-        if (!order)
+        if (!order) {
             throw new common_1.NotFoundException({
                 status: 'failed',
-                message: 'Sorry the order you are looking for does not exist or may have been deleted',
+                message: 'Sorry, the order you are looking for does not exist or may have been deleted',
             });
-        const activeEdit = order.order_edits.find((item) => item.status == lib_1.OrderEditStatus.IN_PROGRESS);
-        const { conversations, ...orderDetails } = order;
+        }
+        const [pages, brief_attachments, submissions, conversations, order_edits, revisions, resize_extras,] = await Promise.all([
+            this.orderRepo.manager
+                .find(entities_1.OrderEntity, {
+                where: { id: orderId },
+                relations: ['pages', 'pages.page_resizes'],
+            })
+                .then((res) => res[0]?.pages ?? []),
+            this.orderBriefAttachmentRepo.find({
+                where: { order: { id: orderId } },
+            }),
+            this.orderSubmissionRepo.find({
+                where: { order: { id: orderId } },
+            }),
+            this.conversationRepo.find({
+                where: { order: { id: orderId } },
+                relations: ['messages'],
+                order: { created_at: 'DESC' },
+            }),
+            this.orderEditRepo.find({
+                where: { order: { id: orderId } },
+                relations: ['pages'],
+            }),
+            this.submissionRevisionRepo.find({
+                where: { order: { id: orderId } },
+            }),
+            this.orderResizeExtraRepo.find({
+                where: { order: { id: orderId } },
+                relations: ['order_page', 'edit_page'],
+            }),
+        ]);
+        const activeEdit = order_edits.find((item) => item.status === lib_1.OrderEditStatus.IN_PROGRESS);
         const conversation = conversations[0];
-        const submissions = this.groupLatestSubmissionsByPage(order);
-        const latestSubmission = order.submissions.sort((a, b) => a.created_at.getTime() - b.created_at.getTime());
-        return lib_1.AppResponse.getSuccessResponse({
-            data: {
-                order: {
-                    ...orderDetails,
-                    conversation,
-                    submissions,
-                    active_edit: activeEdit,
-                    status: activeEdit ? lib_1.OrderStatus.EDIT : order.status,
-                    last_submitted_at: latestSubmission[0]?.created_at,
-                },
+        const orderWithPages = { ...order, pages };
+        const groupedSubmissions = this.groupLatestSubmissionsByPage({
+            ...orderWithPages,
+            submissions,
+        });
+        const latestSubmission = submissions.sort((a, b) => b.created_at.getTime() - a.created_at.getTime())[0];
+        const responseData = {
+            order: {
+                ...order,
+                pages,
+                brief_attachments,
+                submissions: groupedSubmissions,
+                conversation,
+                order_edits,
+                revisions,
+                resize_extras,
+                active_edit: activeEdit,
+                status: activeEdit ? lib_1.OrderStatus.EDIT : order.status,
+                last_submitted_at: latestSubmission?.created_at,
             },
+        };
+        return lib_1.AppResponse.getSuccessResponse({
+            data: responseData,
             message: 'Order retrieved successfully',
         });
     }
@@ -224,6 +278,32 @@ exports.DesignerService = DesignerService;
 exports.DesignerService = DesignerService = __decorate([
     (0, common_1.Injectable)(),
     __param(0, (0, typeorm_1.InjectRepository)(entities_1.OrderEntity)),
-    __metadata("design:paramtypes", [typeorm_2.Repository])
+    __param(1, (0, typeorm_1.InjectRepository)(entity_order_assignments_1.OrderAssignmentEntity)),
+    __param(2, (0, typeorm_1.InjectRepository)(entity_designer_1.DesignerProfileEntity)),
+    __param(3, (0, typeorm_1.InjectRepository)(entities_1.OrderBriefAttachmentEntity)),
+    __param(4, (0, typeorm_1.InjectRepository)(entities_1.OrderResizeExtraEntity)),
+    __param(5, (0, typeorm_1.InjectRepository)(entity_notification_1.NotificationEntity)),
+    __param(6, (0, typeorm_1.InjectRepository)(entities_1.OrderSubmissionEntity)),
+    __param(7, (0, typeorm_1.InjectRepository)(entity_order_reviews_1.OrderReviewEntity)),
+    __param(8, (0, typeorm_1.InjectRepository)(entity_order_receipts_1.OrderReceiptEntity)),
+    __param(9, (0, typeorm_1.InjectRepository)(entity_order_edits_1.OrderEditEntity)),
+    __param(10, (0, typeorm_1.InjectRepository)(entity_edit_page_1.OrderEditPageEntity)),
+    __param(11, (0, typeorm_1.InjectRepository)(entity_conversations_1.ConversationEntity)),
+    __param(12, (0, typeorm_1.InjectRepository)(entity_messages_1.MessageEntity)),
+    __param(13, (0, typeorm_1.InjectRepository)(entity_revisions_1.SubmissionRevisions)),
+    __metadata("design:paramtypes", [typeorm_2.Repository,
+        typeorm_2.Repository,
+        typeorm_2.Repository,
+        typeorm_2.Repository,
+        typeorm_2.Repository,
+        typeorm_2.Repository,
+        typeorm_2.Repository,
+        typeorm_2.Repository,
+        typeorm_2.Repository,
+        typeorm_2.Repository,
+        typeorm_2.Repository,
+        typeorm_2.Repository,
+        typeorm_2.Repository,
+        typeorm_2.Repository])
 ], DesignerService);
 //# sourceMappingURL=designer.service.js.map
