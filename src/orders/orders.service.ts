@@ -4,7 +4,9 @@ import { MessageRevisionEntity } from 'src/entities/entity.message_revisions';
 import { ConversationEntity } from 'src/entities/entity.conversations';
 import {
   AddDesignBriefDto,
+  AddEditSubmissionsDto,
   AddOrderSubmissionsDto,
+  CompleteEditDto,
   CreateOrderReviewDto,
   MakeOrderConfidentialDto,
 } from './dto/update-order.dto';
@@ -753,111 +755,177 @@ export class OrdersService {
   }
   async submitEdit(
     userId: string,
-    editId: string,
-    editSubmissionDto: AddOrderSubmissionsDto,
+    orderId: string,
+    dto: AddEditSubmissionsDto,
   ) {
+    const order = await this.orderRepository.findOne({
+      where: {
+        id: orderId,
+        order_assignments: {
+          status: OrderAssignmentStatus.ACCEPTED,
+          designer: { user: { id: userId } },
+        },
+      },
+      relations: {
+        order_assignments: true,
+        conversations: true,
+        user: true,
+      },
+    });
+
+    if (!order) {
+      throw new NotFoundException(
+        AppResponse.getFailedResponse('Order does not exist'),
+      );
+    }
+
     const edit = await this.orderEditRepo.findOne({
       where: {
         status: OrderEditStatus.IN_PROGRESS,
-        id: editId,
+        id: dto.edit_id,
         order: {
-          user: {
-            id: userId,
-          },
+          id: orderId,
         },
       },
       relations: {
         order: {
           user: true,
         },
+        pages: true,
       },
     });
+
+    console.log({ edit });
 
     if (!edit)
       throw new NotFoundException(
         AppResponse.getFailedResponse('Order Edit not found'),
       );
 
-    if ((edit.status = OrderEditStatus.COMPLETED)) {
+    if (edit.status == OrderEditStatus.COMPLETED) {
       throw new ForbiddenException(
         AppResponse.getFailedResponse('This Edit has already been completed'),
       );
     }
-    const orderSubmissions = await this.orderSubmissionRepo.find({
-      where: { type: SubmissionType.EDIT, order_edit: { id: editId } },
-    });
 
-    const editPages = edit.pages.reduce(
-      (acc, item) => {
-        if (!acc[item.page]) {
-          return {
-            ...acc,
-            [item.page]: item.revisions,
-          };
-        }
-        return {
-          ...acc,
-        };
-      },
-      {} as Record<number, number>,
-    );
+    const conversation = order.conversations[0];
+    const designPlan = DESIGN_PLANS[order.design_package];
 
-    editSubmissionDto.submissions.forEach((submission) => {
-      if (submission.page_type == SubmissionPageType.PAGE) {
-        const revisions = (editPages[submission.page] ?? 1) + 1;
-        const editSubmissions = orderSubmissions.filter(
-          (item) => item.page == submission.page,
-        );
-        if (editSubmissions.length > revisions) {
-          throw new ForbiddenException(
-            AppResponse.getFailedResponse(
-              'This edit has exhausted its total revision',
-            ),
-          );
-        }
-      }
-      if (submission.page_type == SubmissionPageType.RESIZE) {
-        const revisions = (editPages[submission.page] ?? 1) + 1;
-        const editSubmissions = orderSubmissions.filter(
-          (item) => item.resize_page == submission.resize_page,
-        );
-        if (editSubmissions.length > revisions) {
-          throw new ForbiddenException(
-            AppResponse.getFailedResponse(
-              'This edit resize has exhausted its total revision',
-            ),
-          );
-        }
-      }
-    });
-
-    const newSubmissions = editSubmissionDto.submissions.map((submission) =>
-      this.orderSubmissionRepo.create({
-        ...submission,
-        order: edit.order,
-        order_edit: edit,
+    // 2️⃣ Fetch existing revisions (filtered by order for efficiency)
+    const existingRevisions = await this.submissionRevisionRepo.find({
+      where: {
         type: SubmissionType.EDIT,
-      }),
+        order_edit: { id: dto.edit_id },
+        order: { id: orderId },
+      },
+    });
+
+    // 3️⃣ Validate incoming submissions
+    dto.submissions.forEach((submission) =>
+      this.validateRevisionLimit(
+        submission,
+        existingRevisions,
+        (edit.pages.find((item) => item.page == submission.page)?.revisions ??
+          1) + 1,
+        order.user,
+        order,
+      ),
     );
 
-    await this.orderSubmissionRepo.save(newSubmissions);
+    // 4️⃣ Save submissions, messages, and revisions in a single transaction
+    await this.dataSource.transaction(async (manager) => {
+      const submissionRepo = manager.getRepository(OrderSubmissionEntity);
+      const messageRepo = manager.getRepository(MessageEntity);
+      const revisionRepo = manager.getRepository(SubmissionRevisions);
+      const messageRevisionRepo = manager.getRepository(MessageRevisionEntity);
+
+      const submissions = submissionRepo.create(
+        dto.submissions.map((s) => ({
+          ...s,
+          order,
+          type: SubmissionType.EDIT,
+          order_edit: edit,
+        })),
+      );
+
+      const savedSubmissions = await submissionRepo.save(submissions);
+
+      // Create messages
+      const message = this.createSubmissionMessages(
+        savedSubmissions,
+        existingRevisions,
+        userId,
+        conversation,
+      );
+      const newMessage = await messageRepo.save(message);
+
+      // Create revision records
+      const newRevisions = this.createSubmissionRevisions(savedSubmissions);
+      await revisionRepo.save(newRevisions);
+
+      const messageRevisions = this.createMessageRevisions(
+        newMessage,
+        existingRevisions,
+        savedSubmissions,
+      );
+
+      await messageRevisionRepo.save(messageRevisions);
+    });
+
+    this.socketGateway.emitNewMessage(order.user.id);
+
+    // 5️⃣ Notify user asynchronously
+    this.sendSubmissionNotification(order.user, order).catch((err) =>
+      console.error(
+        `Failed to send submission notification for order ${order.order_id}`,
+        (err as Error).stack,
+      ),
+    );
 
     return AppResponse.getSuccessResponse({
       message: 'Edit Submissions added successfully',
-      data: { submission_count: newSubmissions.length },
+      data: {},
     });
   }
-  async completeEdit(userId: string, editId: string) {
+  async completeEdit(userId: string, dto: CompleteEditDto) {
+    const editId = dto.edit_id;
+
     const orderEdit = await this.orderEditRepo.findOne({
-      where: {
-        id: editId,
+      where: [
+        {
+          id: dto.edit_id,
+          order: {
+            user: {
+              id: userId,
+            },
+          },
+        },
+        {
+          id: editId,
+          order: {
+            order_assignments: {
+              designer: {
+                user: {
+                  id: userId,
+                },
+              },
+            },
+          },
+        },
+      ],
+      relations: {
         order: {
-          user: {
-            id: userId,
+          user: true,
+          order_assignments: {
+            designer: {
+              user: true,
+            },
           },
         },
       },
     });
+
+    console.log({ orderEdit });
 
     if (!orderEdit) {
       throw new NotFoundException(
@@ -875,7 +943,7 @@ export class OrdersService {
     await this.orderEditRepo.save(orderEdit);
 
     return AppResponse.getSuccessResponse({
-      message: 'Order edit retrieved successfully',
+      message: 'Order edit completed successfully',
       data: {
         order_edit_id: orderEdit.id,
       },

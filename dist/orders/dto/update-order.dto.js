@@ -9,7 +9,7 @@ var __metadata = (this && this.__metadata) || function (k, v) {
     if (typeof Reflect === "object" && typeof Reflect.metadata === "function") return Reflect.metadata(k, v);
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.CreateOrderReviewDto = exports.AddOrderSubmissionsDto = exports.OrderSubmissionDto = exports.MakeOrderConfidentialDto = exports.AddDesignBriefDto = exports.BriefAttachmentDto = exports.ResizeExtraDto = exports.UpdateOrderDto = void 0;
+exports.CreateOrderReviewDto = exports.CompleteEditDto = exports.AddEditSubmissionsDto = exports.AddOrderSubmissionsDto = exports.OrderSubmissionDto = exports.MakeOrderConfidentialDto = exports.AddDesignBriefDto = exports.BriefAttachmentDto = exports.ResizeExtraDto = exports.UpdateOrderDto = void 0;
 const create_order_dto_1 = require("./create-order.dto");
 const swagger_1 = require("@nestjs/swagger");
 const class_validator_1 = require("class-validator");
@@ -334,6 +334,43 @@ __decorate([
     (0, class_transformer_1.Type)(() => OrderSubmissionDto),
     __metadata("design:type", Array)
 ], AddOrderSubmissionsDto.prototype, "submissions", void 0);
+class AddEditSubmissionsDto {
+    edit_id;
+    submissions;
+}
+exports.AddEditSubmissionsDto = AddEditSubmissionsDto;
+__decorate([
+    (0, swagger_1.ApiProperty)({
+        example: 'uuid-example',
+        description: 'edit message here',
+    }),
+    (0, class_validator_1.IsString)(),
+    (0, class_validator_1.IsUUID)(),
+    __metadata("design:type", String)
+], AddEditSubmissionsDto.prototype, "edit_id", void 0);
+__decorate([
+    (0, swagger_1.ApiProperty)({
+        type: [OrderSubmissionDto],
+        description: 'Array of order submissions',
+    }),
+    (0, class_validator_1.IsArray)(),
+    (0, class_validator_1.ValidateNested)({ each: true }),
+    (0, class_transformer_1.Type)(() => OrderSubmissionDto),
+    __metadata("design:type", Array)
+], AddEditSubmissionsDto.prototype, "submissions", void 0);
+class CompleteEditDto {
+    edit_id;
+}
+exports.CompleteEditDto = CompleteEditDto;
+__decorate([
+    (0, swagger_1.ApiProperty)({
+        example: 'uuid-example',
+        description: 'edit message here',
+    }),
+    (0, class_validator_1.IsString)(),
+    (0, class_validator_1.IsUUID)(),
+    __metadata("design:type", String)
+], CompleteEditDto.prototype, "edit_id", void 0);
 class CreateOrderReviewDto {
     rating;
     comment;

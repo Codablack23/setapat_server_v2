@@ -48,6 +48,13 @@ export declare class OrderSubmissionDto {
 export declare class AddOrderSubmissionsDto {
     submissions: OrderSubmissionDto[];
 }
+export declare class AddEditSubmissionsDto {
+    edit_id: string;
+    submissions: OrderSubmissionDto[];
+}
+export declare class CompleteEditDto {
+    edit_id: string;
+}
 export declare class CreateOrderReviewDto {
     rating: number;
     comment?: string;

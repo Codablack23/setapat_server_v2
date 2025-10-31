@@ -71,8 +71,8 @@ let OrdersController = class OrdersController {
     submitOrderEdit(id, dto, req) {
         return this.ordersService.submitEdit(req.user.id, id, dto);
     }
-    completeOrderEdit(id, req) {
-        return this.ordersService.completeEdit(req.user.id, id);
+    completeOrderEdit(id, req, dto) {
+        return this.ordersService.completeEdit(req.user.id, dto);
     }
     remove(id, req) {
         return this.ordersService.remove(id, req.user.id);
@@ -206,15 +206,16 @@ __decorate([
     __param(1, (0, common_1.Body)()),
     __param(2, (0, common_1.Request)()),
     __metadata("design:type", Function),
-    __metadata("design:paramtypes", [String, update_order_dto_1.AddOrderSubmissionsDto, Object]),
+    __metadata("design:paramtypes", [String, update_order_dto_1.AddEditSubmissionsDto, Object]),
     __metadata("design:returntype", void 0)
 ], OrdersController.prototype, "submitOrderEdit", null);
 __decorate([
     (0, common_1.Post)(':id/edit/complete'),
     __param(0, (0, common_1.Param)('id')),
     __param(1, (0, common_1.Request)()),
+    __param(2, (0, common_1.Body)()),
     __metadata("design:type", Function),
-    __metadata("design:paramtypes", [String, Object]),
+    __metadata("design:paramtypes", [String, Object, update_order_dto_1.CompleteEditDto]),
     __metadata("design:returntype", void 0)
 ], OrdersController.prototype, "completeOrderEdit", null);
 __decorate([

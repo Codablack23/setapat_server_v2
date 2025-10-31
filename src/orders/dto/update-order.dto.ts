@@ -9,6 +9,7 @@ import {
   IsNumber,
   IsOptional,
   IsString,
+  IsUUID,
   Max,
   Min,
   ValidateNested,
@@ -271,6 +272,34 @@ export class AddOrderSubmissionsDto {
   @ValidateNested({ each: true })
   @Type(() => OrderSubmissionDto)
   submissions: OrderSubmissionDto[];
+}
+// DTO containing multiple submissions
+export class AddEditSubmissionsDto {
+  @ApiProperty({
+    example: 'uuid-example',
+    description: 'edit message here',
+  })
+  @IsString()
+  @IsUUID()
+  edit_id: string;
+
+  @ApiProperty({
+    type: [OrderSubmissionDto],
+    description: 'Array of order submissions',
+  })
+  @IsArray()
+  @ValidateNested({ each: true })
+  @Type(() => OrderSubmissionDto)
+  submissions: OrderSubmissionDto[];
+}
+export class CompleteEditDto {
+  @ApiProperty({
+    example: 'uuid-example',
+    description: 'edit message here',
+  })
+  @IsString()
+  @IsUUID()
+  edit_id: string;
 }
 
 export class CreateOrderReviewDto {

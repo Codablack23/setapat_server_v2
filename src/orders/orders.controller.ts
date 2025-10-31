@@ -13,7 +13,9 @@ import { OrdersService } from './orders.service';
 import { CreateOrderDto } from './dto/create-order.dto';
 import {
   AddDesignBriefDto,
+  AddEditSubmissionsDto,
   AddOrderSubmissionsDto,
+  CompleteEditDto,
   CreateOrderReviewDto,
   MakeOrderConfidentialDto,
 } from './dto/update-order.dto';
@@ -133,15 +135,19 @@ export class OrdersController {
   @Post(':id/edit/submit')
   submitOrderEdit(
     @Param('id') id: string,
-    @Body() dto: AddOrderSubmissionsDto,
+    @Body() dto: AddEditSubmissionsDto,
     @Request() req: AuthRequest,
   ) {
     return this.ordersService.submitEdit(req.user.id, id, dto);
   }
 
   @Post(':id/edit/complete')
-  completeOrderEdit(@Param('id') id: string, @Request() req: AuthRequest) {
-    return this.ordersService.completeEdit(req.user.id, id);
+  completeOrderEdit(
+    @Param('id') id: string,
+    @Request() req: AuthRequest,
+    @Body() dto: CompleteEditDto,
+  ) {
+    return this.ordersService.completeEdit(req.user.id, dto);
   }
 
   @Delete(':id')
