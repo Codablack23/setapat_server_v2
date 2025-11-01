@@ -201,6 +201,9 @@ export class DesignerService {
 
       this.orderSubmissionRepo.find({
         where: { order: { id: orderId } },
+        relations: {
+          order_edit: true,
+        },
       }),
 
       this.conversationRepo.find({
@@ -248,6 +251,8 @@ export class DesignerService {
         submissions: groupedSubmissions,
         conversation,
         order_edits,
+        discount: order.discount?.discount,
+        used_discount: order.discount,
         revisions,
         resize_extras,
         active_edit: activeEdit,

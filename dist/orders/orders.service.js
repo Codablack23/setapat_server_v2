@@ -782,62 +782,110 @@ let OrdersService = class OrdersService {
         return response;
     }
     async findOne(id, userId) {
+        console.time('findOne');
         const order = await this.orderRepository.findOne({
             where: {
                 id,
-                user: {
-                    id: userId,
-                },
+                user: { id: userId },
             },
             relations: {
-                pages: {
-                    page_resizes: true,
-                },
-                revisions: true,
-                brief_attachments: true,
-                order_assignments: true,
-                order_edits: {
-                    pages: true,
-                },
-                receipts: true,
-                submissions: true,
-                reviews: true,
-                conversations: true,
-                discount: {
-                    discount: true,
-                },
-                resize_extras: {
-                    order_page: true,
-                    edit_page: true,
-                },
+                discount: { discount: true },
             },
         });
-        if (!order)
+        if (!order) {
             throw new common_1.NotFoundException({
                 status: 'failed',
                 message: 'Sorry the order you are looking for does not exist or may have been deleted',
             });
-        const activeEdit = order.order_edits.find((item) => item.status == lib_1.OrderEditStatus.IN_PROGRESS);
-        const { conversations, ...orderDetails } = order;
+        }
+        const related = await this.loadOrderRelations(id);
+        const { pages, revisions, brief_attachments, order_assignments, order_edits, receipts, submissions, reviews, conversations, resize_extras, } = related;
+        const activeEdit = order_edits.find((item) => item.status === lib_1.OrderEditStatus.IN_PROGRESS);
         const conversation = conversations[0];
-        const submissions = this.groupLatestSubmissionsByPage(order);
-        const latestSubmission = order.submissions.sort((a, b) => a.created_at.getTime() - b.created_at.getTime());
+        const orderWithPages = { ...order, pages };
+        const groupedSubmissions = this.groupLatestSubmissionsByPage({
+            ...orderWithPages,
+            submissions,
+        });
+        const latestSubmission = submissions.sort((a, b) => b.created_at.getTime() - a.created_at.getTime())[0];
+        console.timeEnd('findOne');
         const response = lib_1.AppResponse.getResponse('success', {
             data: {
                 order: {
-                    ...orderDetails,
-                    discount: orderDetails.discount?.discount,
-                    used_discount: orderDetails.discount,
+                    ...order,
+                    pages,
+                    revisions,
+                    brief_attachments,
+                    order_assignments,
+                    order_edits,
+                    receipts,
+                    submissions: groupedSubmissions,
+                    reviews,
                     conversation,
+                    resize_extras,
+                    discount: order.discount?.discount,
+                    used_discount: order.discount,
                     status: activeEdit ? lib_1.OrderStatus.EDIT : order.status,
                     active_edit: activeEdit,
-                    last_submitted_at: latestSubmission[0]?.created_at,
-                    submissions,
+                    last_submitted_at: latestSubmission?.created_at,
                 },
             },
             message: 'orders retrieved successfully',
         });
         return response;
+    }
+    async loadOrderRelations(orderId) {
+        const [pagesEntity, revisions, brief_attachments, order_assignments, order_edits, receipts, submissions, reviews, conversations, resize_extras,] = await Promise.all([
+            this.orderRepository.manager.find(entities_1.OrderEntity, {
+                where: { id: orderId },
+                relations: ['pages', 'pages.page_resizes'],
+            }),
+            this.orderReviewRepo.find({ where: { order: { id: orderId } } }),
+            this.orderBriefAttachmentRepo.find({
+                where: { order: { id: orderId } },
+            }),
+            this.orderAssignmentRepo.find({
+                where: { order: { id: orderId } },
+                relations: ['designer', 'designer.user'],
+            }),
+            this.orderEditRepo.find({
+                where: { order: { id: orderId } },
+                relations: ['pages'],
+            }),
+            this.orderReceiptRepo.find({
+                where: { order: { id: orderId } },
+            }),
+            this.orderSubmissionRepo.find({
+                where: { order: { id: orderId } },
+                relations: {
+                    order_edit: true,
+                },
+            }),
+            this.orderReviewRepo.find({
+                where: { order: { id: orderId } },
+            }),
+            this.conversationRepo.find({
+                where: { order: { id: orderId } },
+                relations: ['messages'],
+                order: { created_at: 'DESC' },
+            }),
+            this.orderResizeExtraRepo.find({
+                where: { order: { id: orderId } },
+                relations: ['order_page', 'edit_page'],
+            }),
+        ]);
+        return {
+            pages: pagesEntity[0]?.pages ?? [],
+            revisions,
+            brief_attachments,
+            order_assignments,
+            order_edits,
+            receipts,
+            submissions,
+            reviews,
+            conversations,
+            resize_extras,
+        };
     }
     groupLatestSubmissionsByPage(order) {
         let order_submissions = {};

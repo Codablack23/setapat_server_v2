@@ -164,13 +164,21 @@ export declare class OrdersService {
         message: string;
         data: {
             order: {
+                pages: OrderPageEntity[];
+                revisions: OrderReviewEntity[];
+                brief_attachments: OrderBriefAttachmentEntity[];
+                order_assignments: OrderAssignmentEntity[];
+                order_edits: OrderEditEntity[];
+                receipts: OrderReceiptEntity[];
+                submissions: OrderSubmissions;
+                reviews: OrderReviewEntity[];
+                conversation: ConversationEntity;
+                resize_extras: OrderResizeExtraEntity[];
                 discount: DiscountEntity | undefined;
                 used_discount: UsedDiscountEntity | undefined;
-                conversation: ConversationEntity;
                 status: OrderStatus;
                 active_edit: OrderEditEntity | undefined;
                 last_submitted_at: Date;
-                submissions: OrderSubmissions;
                 id: string;
                 design_class: import("src/lib").DesignClass;
                 order_id: string;
@@ -191,21 +199,15 @@ export declare class OrdersService {
                 commenced_at?: Date;
                 completed_at?: Date;
                 last_edited_at?: Date;
-                resize_extras: OrderResizeExtraEntity[];
-                order_edits: OrderEditEntity[];
-                order_assignments: OrderAssignmentEntity[];
-                brief_attachments: OrderBriefAttachmentEntity[];
-                pages: OrderPageEntity[];
-                reviews: OrderReviewEntity[];
-                receipts: OrderReceiptEntity[];
+                conversations: ConversationEntity[];
                 notifications: NotificationEntity[];
-                revisions: SubmissionRevisions[];
                 user: UserEntity;
                 created_at: Date;
                 updated_at: Date;
             };
         } | undefined;
     }>;
+    private loadOrderRelations;
     private groupLatestSubmissionsByPage;
     update(id: number, updateOrderDto: UpdateOrderDto): string;
     generateReceipt(userId: string, id: string): Promise<{

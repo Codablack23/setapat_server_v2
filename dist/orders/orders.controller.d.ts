@@ -62,13 +62,21 @@ export declare class OrdersController {
         message: string;
         data: {
             order: {
+                pages: import("../entities").OrderPageEntity[];
+                revisions: import("../entities/entity.order_reviews").OrderReviewEntity[];
+                brief_attachments: import("../entities").OrderBriefAttachmentEntity[];
+                order_assignments: import("../entities/entity.order_assignments").OrderAssignmentEntity[];
+                order_edits: import("../entities/entity.order_edits").OrderEditEntity[];
+                receipts: import("../entities/entity.order_receipts").OrderReceiptEntity[];
+                submissions: import("src/lib").OrderSubmissions;
+                reviews: import("../entities/entity.order_reviews").OrderReviewEntity[];
+                conversation: import("../entities/entity.conversations").ConversationEntity;
+                resize_extras: import("../entities").OrderResizeExtraEntity[];
                 discount: import("../entities/entity.discount").DiscountEntity | undefined;
                 used_discount: import("../entities/entity.used_discount").UsedDiscountEntity | undefined;
-                conversation: import("../entities/entity.conversations").ConversationEntity;
                 status: import("src/lib").OrderStatus;
                 active_edit: import("../entities/entity.order_edits").OrderEditEntity | undefined;
                 last_submitted_at: Date;
-                submissions: import("src/lib").OrderSubmissions;
                 id: string;
                 design_class: import("src/lib").DesignClass;
                 order_id: string;
@@ -89,15 +97,8 @@ export declare class OrdersController {
                 commenced_at?: Date;
                 completed_at?: Date;
                 last_edited_at?: Date;
-                resize_extras: import("../entities").OrderResizeExtraEntity[];
-                order_edits: import("../entities/entity.order_edits").OrderEditEntity[];
-                order_assignments: import("../entities/entity.order_assignments").OrderAssignmentEntity[];
-                brief_attachments: import("../entities").OrderBriefAttachmentEntity[];
-                pages: import("../entities").OrderPageEntity[];
-                reviews: import("../entities/entity.order_reviews").OrderReviewEntity[];
-                receipts: import("../entities/entity.order_receipts").OrderReceiptEntity[];
+                conversations: import("../entities/entity.conversations").ConversationEntity[];
                 notifications: import("../entities/entity.notification").NotificationEntity[];
-                revisions: import("../entities/entity.revisions").SubmissionRevisions[];
                 user: import("../entities").UserEntity;
                 created_at: Date;
                 updated_at: Date;

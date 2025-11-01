@@ -1224,73 +1224,157 @@ export class OrdersService {
   }
 
   async findOne(id: string, userId: string) {
+    console.time('findOne');
+
+    // Step 1: Fetch base order (light, minimal relations)
     const order = await this.orderRepository.findOne({
       where: {
         id,
-        user: {
-          id: userId,
-        },
+        user: { id: userId },
       },
       relations: {
-        pages: {
-          page_resizes: true,
-        },
-        revisions: true,
-        brief_attachments: true,
-        order_assignments: true,
-        order_edits: {
-          pages: true,
-        },
-        receipts: true,
-        submissions: true,
-        reviews: true,
-        conversations: true,
-        discount: {
-          discount: true,
-        },
-        resize_extras: {
-          order_page: true,
-          edit_page: true,
-        },
+        discount: { discount: true },
       },
     });
 
-    if (!order)
+    if (!order) {
       throw new NotFoundException({
         status: 'failed',
         message:
           'Sorry the order you are looking for does not exist or may have been deleted',
       });
+    }
 
-    const activeEdit = order.order_edits.find(
-      (item) => item.status == OrderEditStatus.IN_PROGRESS,
+    // Step 2: Fetch other relations in parallel
+    const related = await this.loadOrderRelations(id);
+
+    // Destructure loaded relations
+    const {
+      pages,
+      revisions,
+      brief_attachments,
+      order_assignments,
+      order_edits,
+      receipts,
+      submissions,
+      reviews,
+      conversations,
+      resize_extras,
+    } = related;
+
+    // Step 3: Process & structure results
+    const activeEdit = order_edits.find(
+      (item) => item.status === OrderEditStatus.IN_PROGRESS,
     );
-
-    const { conversations, ...orderDetails } = order;
 
     const conversation = conversations[0];
-    const submissions = this.groupLatestSubmissionsByPage(order);
-    const latestSubmission = order.submissions.sort(
-      (a, b) => a.created_at.getTime() - b.created_at.getTime(),
-    );
+    const orderWithPages = { ...order, pages };
+    const groupedSubmissions = this.groupLatestSubmissionsByPage({
+      ...orderWithPages,
+      submissions,
+    } as OrderEntity);
 
+    const latestSubmission = submissions.sort(
+      (a, b) => b.created_at.getTime() - a.created_at.getTime(),
+    )[0];
+
+    console.timeEnd('findOne');
+
+    // Step 4: Construct final response
     const response = AppResponse.getResponse('success', {
       data: {
         order: {
-          ...orderDetails,
-          discount: orderDetails.discount?.discount,
-          used_discount: orderDetails.discount,
+          ...order,
+          pages,
+          revisions,
+          brief_attachments,
+          order_assignments,
+          order_edits,
+          receipts,
+          submissions: groupedSubmissions,
+          reviews,
           conversation,
+          resize_extras,
+          discount: order.discount?.discount,
+          used_discount: order.discount,
           status: activeEdit ? OrderStatus.EDIT : order.status,
           active_edit: activeEdit,
-          last_submitted_at: latestSubmission[0]?.created_at,
-          submissions,
+          last_submitted_at: latestSubmission?.created_at,
         },
       },
       message: 'orders retrieved successfully',
     });
 
     return response;
+  }
+
+  /**
+   * 🧩 Helper — load all order relations concurrently
+   */
+  private async loadOrderRelations(orderId: string) {
+    const [
+      pagesEntity,
+      revisions,
+      brief_attachments,
+      order_assignments,
+      order_edits,
+      receipts,
+      submissions,
+      reviews,
+      conversations,
+      resize_extras,
+    ] = await Promise.all([
+      this.orderRepository.manager.find(OrderEntity, {
+        where: { id: orderId },
+        relations: ['pages', 'pages.page_resizes'],
+      }),
+      this.orderReviewRepo.find({ where: { order: { id: orderId } } }),
+      this.orderBriefAttachmentRepo.find({
+        where: { order: { id: orderId } },
+      }),
+      this.orderAssignmentRepo.find({
+        where: { order: { id: orderId } },
+        relations: ['designer', 'designer.user'],
+      }),
+      this.orderEditRepo.find({
+        where: { order: { id: orderId } },
+        relations: ['pages'],
+      }),
+      this.orderReceiptRepo.find({
+        where: { order: { id: orderId } },
+      }),
+      this.orderSubmissionRepo.find({
+        where: { order: { id: orderId } },
+        relations: {
+          order_edit: true,
+        },
+      }),
+      this.orderReviewRepo.find({
+        where: { order: { id: orderId } },
+      }),
+      this.conversationRepo.find({
+        where: { order: { id: orderId } },
+        relations: ['messages'],
+        order: { created_at: 'DESC' },
+      }),
+      this.orderResizeExtraRepo.find({
+        where: { order: { id: orderId } },
+        relations: ['order_page', 'edit_page'],
+      }),
+    ]);
+
+    return {
+      pages: pagesEntity[0]?.pages ?? [],
+      revisions,
+      brief_attachments,
+      order_assignments,
+      order_edits,
+      receipts,
+      submissions,
+      reviews,
+      conversations,
+      resize_extras,
+    };
   }
 
   private groupLatestSubmissionsByPage(order: OrderEntity) {

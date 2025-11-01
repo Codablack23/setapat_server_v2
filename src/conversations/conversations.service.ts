@@ -55,7 +55,9 @@ export class ConversationsService {
       relations: {
         sender: true,
         attachments: true,
-        order_submissions: true,
+        order_submissions: {
+          order_edit: true,
+        },
         revisions: true,
       },
       order: { created_at: 'ASC' },

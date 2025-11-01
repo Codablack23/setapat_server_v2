@@ -15,7 +15,7 @@ export declare class ConversationsService {
     private socketGateway;
     constructor(messageRepo: Repository<MessageEntity>, conversationRepo: Repository<ConversationEntity>, messageAttachmentRepo: Repository<MessageAttachmentEntity>, participantRepo: Repository<ConversationParticipantEntity>, socketGateway: SocketGateway);
     getMessages(userId: string, id: string): Promise<{
-        status: "failed" | "success";
+        status: "success" | "failed";
         message: string;
         data: {
             messages: (MessageEntity | {
@@ -35,7 +35,7 @@ export declare class ConversationsService {
         } | undefined;
     }>;
     sendMessage(user: UserEntity, id: string, sendMessageDto: SendMessageDto): Promise<{
-        status: "failed" | "success";
+        status: "success" | "failed";
         message: string;
         data: {
             message: MessageEntity;

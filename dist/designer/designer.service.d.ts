@@ -46,6 +46,8 @@ export declare class DesignerService {
                 submissions: OrderSubmissions;
                 conversation: ConversationEntity;
                 order_edits: OrderEditEntity[];
+                discount: import("../entities/entity.discount").DiscountEntity | undefined;
+                used_discount: import("../entities/entity.used_discount").UsedDiscountEntity | undefined;
                 revisions: SubmissionRevisions[];
                 resize_extras: OrderResizeExtraEntity[];
                 active_edit: OrderEditEntity | undefined;
@@ -77,7 +79,6 @@ export declare class DesignerService {
                 receipts: OrderReceiptEntity[];
                 notifications: NotificationEntity[];
                 user: import("src/entities").UserEntity;
-                discount?: import("../entities/entity.used_discount").UsedDiscountEntity;
                 created_at: Date;
                 updated_at: Date;
             };

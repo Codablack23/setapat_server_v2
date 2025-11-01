@@ -22,6 +22,8 @@ export declare class DesignerController {
                 submissions: import("src/lib").OrderSubmissions;
                 conversation: import("../entities/entity.conversations").ConversationEntity;
                 order_edits: import("../entities/entity.order_edits").OrderEditEntity[];
+                discount: import("../entities/entity.discount").DiscountEntity | undefined;
+                used_discount: import("../entities/entity.used_discount").UsedDiscountEntity | undefined;
                 revisions: import("../entities/entity.revisions").SubmissionRevisions[];
                 resize_extras: import("../entities").OrderResizeExtraEntity[];
                 active_edit: import("../entities/entity.order_edits").OrderEditEntity | undefined;
@@ -53,7 +55,6 @@ export declare class DesignerController {
                 receipts: import("../entities/entity.order_receipts").OrderReceiptEntity[];
                 notifications: import("../entities/entity.notification").NotificationEntity[];
                 user: import("../entities").UserEntity;
-                discount?: import("../entities/entity.used_discount").UsedDiscountEntity;
                 created_at: Date;
                 updated_at: Date;
             };
