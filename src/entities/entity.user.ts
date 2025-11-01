@@ -17,6 +17,7 @@ import { NotificationEntity } from "./entity.notification";
 import { DesignerProfileEntity } from "./entity.designer";
 import { MessageEntity } from "./entity.messages";
 import { ConversationParticipantEntity } from "./entity.participants";
+import { UsedDiscountEntity } from "./entity.used_discount";
 
 @Entity({ name: "users" })
 export class UserEntity {
@@ -67,6 +68,9 @@ export class UserEntity {
     
     @OneToMany(() => ConversationParticipantEntity, (participant) => participant.user)
     participants: ConversationParticipantEntity[]
+    
+    @OneToMany(() => UsedDiscountEntity, (discount) => discount.user)
+    discounts: UsedDiscountEntity[]
 
     @BeforeInsert()
     async hashPassword() {

@@ -42,6 +42,9 @@ export class DiscountEntity {
   })
   cycle_type: DiscountCycleType;
 
+  @Column('json', { nullable: true })
+  allowed_user_email?: string[];
+
   @Index({ unique: true })
   @Column({ type: 'varchar', length: 20 })
   code: string;

@@ -1,3 +1,4 @@
+import { DiscountCycleType } from './../entities/entity.discount';
 /* eslint-disable @typescript-eslint/no-unused-vars */
 import {
   BadRequestException,
@@ -8,7 +9,7 @@ import {
 import { ApplyDiscountDto, CreateDiscountDto } from './dto/create-discount.dto';
 import { UpdateDiscountDto } from './dto/update-discount.dto';
 import { InjectRepository } from '@nestjs/typeorm';
-import { DiscountEntity } from 'src/entities/entity.discount';
+import { DiscountEntity, DiscountType } from 'src/entities/entity.discount';
 import { Repository } from 'typeorm';
 import { AppResponse } from 'src/lib';
 import { DiscountUtils } from 'src/lib/utils/util.discount';
@@ -90,7 +91,9 @@ export class DiscountsService {
         code,
       },
       relations: {
-        used_discounts: true,
+        used_discounts: {
+          user: true,
+        },
       },
     });
     if (!discount) {
@@ -99,29 +102,13 @@ export class DiscountsService {
       );
     }
 
-    const usedDiscounts = discount.used_discounts.filter(
-      (item) => item.status == UsedDisountStatus.USED,
-    );
-
-    const voucher = DiscountUtils.validateDiscount(
-      discount,
-      usedDiscounts.length,
-      usedDiscounts,
-    );
-
-    const used_discount_amount = DiscountUtils.getUsedDiscountsPerCycleAmount(
-      voucher.cycle_type,
-      usedDiscounts,
-    );
-
-    const usableBalance = voucher.amount - used_discount_amount;
-
     const order = await this.orderRepo.findOne({
       where: {
         id: applyDiscountDto.order_id,
       },
       relations: {
         pages: true,
+        user: true,
         resize_extras: true,
       },
     });
@@ -131,6 +118,42 @@ export class DiscountsService {
         AppResponse.getFailedResponse('Order could not be found'),
       );
     }
+
+    const usedDiscountsPerUser = discount.used_discounts.filter(
+      (item) =>
+        item.status == UsedDisountStatus.USED && item.user?.id == order.user.id,
+    );
+
+    const usedDiscounts = discount.used_discounts.filter(
+      (item) => item.status == UsedDisountStatus.USED,
+    );
+
+    const voucher = DiscountUtils.validateDiscount(
+      discount,
+      discount.cycle_type == DiscountCycleType.NONE
+        ? usedDiscounts.length
+        : usedDiscountsPerUser.length,
+      discount.cycle_type == DiscountCycleType.NONE
+        ? usedDiscounts
+        : usedDiscountsPerUser,
+    );
+
+    const used_discount_amount = DiscountUtils.getUsedDiscountsPerCycleAmount(
+      voucher.cycle_type,
+      usedDiscounts,
+    );
+
+    if (voucher.allowed_user_email && voucher.allowed_user_email.length) {
+      if (!voucher.allowed_user_email.includes(order.user.email)) {
+        throw new ForbiddenException(
+          AppResponse.getFailedResponse(
+            'Sorry, this voucher code isn’t available for your account.',
+          ),
+        );
+      }
+    }
+
+    const usableBalance = voucher.amount - used_discount_amount;
 
     const orderAmount = order.pages.reduce((acc, item) => acc + item.price, 0);
     const resizeAmount = order.resize_extras.reduce(
@@ -142,18 +165,17 @@ export class DiscountsService {
 
     const amount = orderAmount + resizeAmount + quickDeliveryAmount;
 
+    const percentageAmount = orderAmount * (voucher.amount / 100);
+
     const usedDiscount = this.usedDiscountRepo.create({
       discount,
-      amount: Math.min(amount, usableBalance),
+      amount:
+        voucher.type == DiscountType.FLAT
+          ? Math.min(amount, usableBalance)
+          : percentageAmount,
     });
 
-    console.log({
-      amount,
-      orderAmount,
-      used_discount_amount,
-    });
-
-    if (usableBalance < 1) {
+    if (usableBalance < 1 && voucher.type == DiscountType.FLAT) {
       throw new BadRequestException(
         AppResponse.getFailedResponse('This is voucher has no usable balance'),
       );

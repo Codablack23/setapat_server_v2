@@ -9,6 +9,7 @@ import {
 } from 'typeorm';
 import { DiscountEntity } from './entity.discount';
 import { OrderEntity } from './entity.order';
+import { UserEntity } from './entity.user';
 
 export enum UsedDisountStatus {
   PENDING = 'PENDING',
@@ -46,6 +47,12 @@ export class UsedDiscountEntity {
 
   @OneToMany(() => OrderEntity, (orders) => orders.discount, { cascade: true })
   orders: OrderEntity[];
+
+  @ManyToOne(() => UserEntity, (user) => user.discounts, {
+    onDelete: 'CASCADE',
+    nullable: true,
+  })
+  user?: UserEntity;
 
   @CreateDateColumn()
   created_at: Date;
