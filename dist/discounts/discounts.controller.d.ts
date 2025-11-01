@@ -16,6 +16,7 @@ export declare class DiscountsController {
                 id: string;
                 type: import("../entities/entity.discount").DiscountType;
                 cycle_type: import("../entities/entity.discount").DiscountCycleType;
+                allowed_user_email?: string[];
                 code: string;
                 description: string;
                 duration_hours: number;

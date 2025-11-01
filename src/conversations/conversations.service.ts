@@ -102,6 +102,9 @@ export class ConversationsService {
 
       return {
         ...message,
+        order_edit: message.order_submissions?.[0]
+          ? message.order_submissions?.[0].order_edit
+          : undefined,
         revisions: revisionsPerPage,
       };
     });

@@ -21,6 +21,7 @@ const entity_notification_1 = require("./entity.notification");
 const entity_designer_1 = require("./entity.designer");
 const entity_messages_1 = require("./entity.messages");
 const entity_participants_1 = require("./entity.participants");
+const entity_used_discount_1 = require("./entity.used_discount");
 let UserEntity = class UserEntity {
     id;
     firstname;
@@ -38,6 +39,7 @@ let UserEntity = class UserEntity {
     notifications;
     sent_messages;
     participants;
+    discounts;
     async hashPassword() {
         const salt = await bcrypt_1.default.genSalt(10);
         this.password = await bcrypt_1.default.hash(this.password, salt);
@@ -116,6 +118,10 @@ __decorate([
     (0, typeorm_1.OneToMany)(() => entity_participants_1.ConversationParticipantEntity, (participant) => participant.user),
     __metadata("design:type", Array)
 ], UserEntity.prototype, "participants", void 0);
+__decorate([
+    (0, typeorm_1.OneToMany)(() => entity_used_discount_1.UsedDiscountEntity, (discount) => discount.user),
+    __metadata("design:type", Array)
+], UserEntity.prototype, "discounts", void 0);
 __decorate([
     (0, typeorm_1.BeforeInsert)(),
     __metadata("design:type", Function),

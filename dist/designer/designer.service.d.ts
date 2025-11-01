@@ -30,14 +30,14 @@ export declare class DesignerService {
     constructor(orderRepo: Repository<OrderEntity>, orderAssignmentRepo: Repository<OrderAssignmentEntity>, designerRepo: Repository<DesignerProfileEntity>, orderBriefAttachmentRepo: Repository<OrderBriefAttachmentEntity>, orderResizeExtraRepo: Repository<OrderResizeExtraEntity>, notificationRepo: Repository<NotificationEntity>, orderSubmissionRepo: Repository<OrderSubmissionEntity>, orderReviewRepo: Repository<OrderReviewEntity>, orderReceiptRepo: Repository<OrderReceiptEntity>, orderEditRepo: Repository<OrderEditEntity>, orderEditPageRepo: Repository<OrderEditPageEntity>, conversationRepo: Repository<ConversationEntity>, messageRepo: Repository<MessageEntity>, submissionRevisionRepo: Repository<SubmissionRevisions>);
     private sortOrders;
     getOrders(userId: string, query?: OrdersQuery): Promise<{
-        status: "success" | "failed";
+        status: "failed" | "success";
         message: string;
         data: {
             orders: OrderEntity[];
         } | undefined;
     }>;
     getOrder(userId: string, orderId: string): Promise<{
-        status: "success" | "failed";
+        status: "failed" | "success";
         message: string;
         data: {
             order: {

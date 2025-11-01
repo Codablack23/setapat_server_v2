@@ -13,6 +13,7 @@ exports.UsedDiscountEntity = exports.UsedDisountStatus = void 0;
 const typeorm_1 = require("typeorm");
 const entity_discount_1 = require("./entity.discount");
 const entity_order_1 = require("./entity.order");
+const entity_user_1 = require("./entity.user");
 var UsedDisountStatus;
 (function (UsedDisountStatus) {
     UsedDisountStatus["PENDING"] = "PENDING";
@@ -24,6 +25,7 @@ let UsedDiscountEntity = class UsedDiscountEntity {
     amount;
     discount;
     orders;
+    user;
     created_at;
     updated_at;
 };
@@ -63,6 +65,13 @@ __decorate([
     (0, typeorm_1.OneToMany)(() => entity_order_1.OrderEntity, (orders) => orders.discount, { cascade: true }),
     __metadata("design:type", Array)
 ], UsedDiscountEntity.prototype, "orders", void 0);
+__decorate([
+    (0, typeorm_1.ManyToOne)(() => entity_user_1.UserEntity, (user) => user.discounts, {
+        onDelete: 'CASCADE',
+        nullable: true,
+    }),
+    __metadata("design:type", entity_user_1.UserEntity)
+], UsedDiscountEntity.prototype, "user", void 0);
 __decorate([
     (0, typeorm_1.CreateDateColumn)(),
     __metadata("design:type", Date)

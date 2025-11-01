@@ -25,6 +25,7 @@ export declare class UsersService {
                 notifications: import("../entities/entity.notification").NotificationEntity[];
                 sent_messages: import("../entities/entity.messages").MessageEntity[];
                 participants: import("../entities/entity.participants").ConversationParticipantEntity[];
+                discounts: import("../entities/entity.used_discount").UsedDiscountEntity[];
                 created_at: Date;
                 updated_at: Date;
             };

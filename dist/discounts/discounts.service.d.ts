@@ -1,6 +1,7 @@
+import { DiscountCycleType } from './../entities/entity.discount';
 import { ApplyDiscountDto, CreateDiscountDto } from './dto/create-discount.dto';
 import { UpdateDiscountDto } from './dto/update-discount.dto';
-import { DiscountEntity } from 'src/entities/entity.discount';
+import { DiscountEntity, DiscountType } from 'src/entities/entity.discount';
 import { Repository } from 'typeorm';
 import { UsedDiscountEntity } from 'src/entities/entity.used_discount';
 import { OrderEntity } from 'src/entities';
@@ -19,8 +20,9 @@ export declare class DiscountsService {
                 used_discount_amount: number;
                 used_discounts: UsedDiscountEntity[];
                 id: string;
-                type: import("src/entities/entity.discount").DiscountType;
-                cycle_type: import("src/entities/entity.discount").DiscountCycleType;
+                type: DiscountType;
+                cycle_type: DiscountCycleType;
+                allowed_user_email?: string[];
                 code: string;
                 description: string;
                 duration_hours: number;

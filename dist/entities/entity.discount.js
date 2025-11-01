@@ -31,6 +31,7 @@ let DiscountEntity = class DiscountEntity {
     id;
     type;
     cycle_type;
+    allowed_user_email;
     code;
     description;
     duration_hours = 24;
@@ -69,6 +70,10 @@ __decorate([
     }),
     __metadata("design:type", String)
 ], DiscountEntity.prototype, "cycle_type", void 0);
+__decorate([
+    (0, typeorm_1.Column)('json', { nullable: true }),
+    __metadata("design:type", Array)
+], DiscountEntity.prototype, "allowed_user_email", void 0);
 __decorate([
     (0, typeorm_1.Index)({ unique: true }),
     (0, typeorm_1.Column)({ type: 'varchar', length: 20 }),

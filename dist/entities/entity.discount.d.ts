@@ -16,6 +16,7 @@ export declare class DiscountEntity {
     id: string;
     type: DiscountType;
     cycle_type: DiscountCycleType;
+    allowed_user_email?: string[];
     code: string;
     description: string;
     duration_hours: number;

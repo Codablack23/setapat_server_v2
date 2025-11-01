@@ -4,6 +4,7 @@ import { NotificationEntity } from "./entity.notification";
 import { DesignerProfileEntity } from "./entity.designer";
 import { MessageEntity } from "./entity.messages";
 import { ConversationParticipantEntity } from "./entity.participants";
+import { UsedDiscountEntity } from "./entity.used_discount";
 export declare class UserEntity {
     id: string;
     firstname: string;
@@ -21,6 +22,7 @@ export declare class UserEntity {
     notifications: NotificationEntity[];
     sent_messages: MessageEntity[];
     participants: ConversationParticipantEntity[];
+    discounts: UsedDiscountEntity[];
     hashPassword(): Promise<void>;
     hashPasswordBeforeUpdate(): Promise<void>;
     created_at: Date;

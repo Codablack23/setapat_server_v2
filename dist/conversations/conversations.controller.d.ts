@@ -5,17 +5,18 @@ export declare class ConversationsController {
     private readonly conversationsService;
     constructor(conversationsService: ConversationsService);
     create(id: string, req: AuthRequest, sendMessageDto: SendMessageDto): Promise<{
-        status: "success" | "failed";
+        status: "failed" | "success";
         message: string;
         data: {
             message: import("../entities/entity.messages").MessageEntity;
         } | undefined;
     }>;
     findAll(id: string, req: AuthRequest): Promise<{
-        status: "success" | "failed";
+        status: "failed" | "success";
         message: string;
         data: {
             messages: (import("../entities/entity.messages").MessageEntity | {
+                order_edit: import("../entities/entity.order_edits").OrderEditEntity | undefined;
                 revisions: import("src/lib").RevisionPerPage;
                 id: string;
                 conversation: import("../entities/entity.conversations").ConversationEntity;
